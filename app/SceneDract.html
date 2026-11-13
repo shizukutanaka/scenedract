@@ -751,6 +751,7 @@
     <div class="tabpane" id="pane-bpy">
       <div class="pane-note ja-only"><b>Blender 5.2 LTS 固定 / data API 優先。</b> <span class="mono">bpy.ops</span> は poll() の文脈依存で最大の失敗源のため、メッシュは bmesh + <span class="mono">bpy.data</span> で構築。冪等（同名オブジェクトは再構築）で、<span class="mono">blender --background --python build_scene.py</span> のヘッドレス実行と GUI の Scripting 実行の両対応。末尾の書き出しは上の<b>書き出しプロファイル</b>で選んだ対象ソフト向けになります（GLB は <span class="mono">use_active_scene=True</span> 固定、USD は <span class="mono">wm.usd_export</span> で .usda、FBX は実測済みジオメトリ専用プロファイル）。レンダーエンジンは 5.2 の正解 <span class="mono">BLENDER_EEVEE</span> を明示します（<span class="mono">BLENDER_EEVEE_NEXT</span> は 5.2 ではエラー）。模様は <span class="mono">bpy.data.images.new</span> で画像を作りピクセルを数式どおりに描いて <span class="mono">pack()</span> し、TexImage 経由で Base Color に接続します（ノード・プロシージャルは GLB に乗らないため使いません）。マネキンは <span class="mono">MANNEQUIN_</span> コレクションにパーツ（頭・胴・腕・脚）を生成します — 大きさ確認用でキャラクター資産ではありません。当たり判定は Blender に作りません: <span class="mono">collider</span> フラグはカスタムプロパティとして記録されるだけです。</div>
       <div class="pane-note en-only"><b>Pinned to Blender 5.2 LTS / data-API first.</b> <span class="mono">bpy.ops</span> poll() context failures are the #1 runtime error class, so meshes are built with bmesh + <span class="mono">bpy.data</span>. Idempotent (same-named objects are rebuilt), runs both headless (<span class="mono">blender --background --python build_scene.py</span>) and in the GUI Scripting workspace. The trailing export follows the <b>export profile</b> selected above (GLB pinned to <span class="mono">use_active_scene=True</span>, USD via <span class="mono">wm.usd_export</span> to .usda, FBX in the measured geometry-only profile). The render engine is pinned to the 5.2-correct <span class="mono">BLENDER_EEVEE</span> (<span class="mono">BLENDER_EEVEE_NEXT</span> errors on 5.2). Patterns are drawn pixel-by-pixel into a <span class="mono">bpy.data.images.new</span> image, <span class="mono">pack()</span>ed and connected via a TexImage node — node procedurals never travel in GLB, so they are not used. Mannequins build as parts (head / torso / arms / legs) in a <span class="mono">MANNEQUIN_</span> collection — scale references, not character assets. No colliders are built in Blender: the <span class="mono">collider</span> flag is recorded as a custom property only.</div><div class="pane-note zh-only"><b>固定 Blender 5.2 LTS / data API 优先。</b> <span class="mono">bpy.ops</span> 的 poll() 上下文依赖是最大的失败来源,因此网格用 bmesh + <span class="mono">bpy.data</span> 构建。幂等（同名对象会被重建）,同时支持 <span class="mono">blender --background --python build_scene.py</span> 的无头执行和 GUI 的 Scripting 执行。末尾的导出按上方<b>导出配置</b>所选目标软件生成（GLB 固定 <span class="mono">use_active_scene=True</span>,USD 用 <span class="mono">wm.usd_export</span> 输出 .usda,FBX 为实测过的几何专用配置）。渲染引擎明确指定 5.2 的正确值 <span class="mono">BLENDER_EEVEE</span>（<span class="mono">BLENDER_EEVEE_NEXT</span> 在 5.2 中会报错）。图案用 <span class="mono">bpy.data.images.new</span> 创建图像,按公式逐像素绘制并 <span class="mono">pack()</span>,经 TexImage 节点连接到 Base Color（节点程序化不会进入 GLB,因此不使用）。人体模型在 <span class="mono">MANNEQUIN_</span> 集合中生成部件（头·躯干·手臂·腿）— 用于确认尺寸,不是角色资产。Blender 中不创建碰撞体: <span class="mono">collider</span> 标志只记录为自定义属性。</div><div class="pane-note ko-only"><b>Blender 5.2 LTS 고정 / data API 우선.</b> <span class="mono">bpy.ops</span>는 poll()의 문맥 의존이 최대의 실패원이므로, 메시는 bmesh + <span class="mono">bpy.data</span>로 구축합니다. 멱등(같은 이름의 오브젝트는 재구축)이며, <span class="mono">blender --background --python build_scene.py</span>의 헤드리스 실행과 GUI의 Scripting 실행 양쪽에 대응합니다. 끝부분의 내보내기는 위의 <b>내보내기 프로필</b>에서 고른 대상 소프트웨어용이 됩니다(GLB는 <span class="mono">use_active_scene=True</span> 고정, USD는 <span class="mono">wm.usd_export</span>로 .usda, FBX는 실측 완료된 지오메트리 전용 프로필). 렌더 엔진은 5.2의 정답인 <span class="mono">BLENDER_EEVEE</span>를 명시합니다(<span class="mono">BLENDER_EEVEE_NEXT</span>는 5.2에서 오류). 패턴은 <span class="mono">bpy.data.images.new</span>로 이미지를 만들어 픽셀을 수식대로 그려 <span class="mono">pack()</span>하고, TexImage를 통해 Base Color에 연결합니다(노드 절차적은 GLB에 실리지 않으므로 쓰지 않습니다). 마네킹은 <span class="mono">MANNEQUIN_</span> 컬렉션에 부품(머리·몸통·팔·다리)을 생성합니다 — 크기 확인용이며 캐릭터 자산이 아닙니다. 콜라이더는 Blender에 만들지 않습니다: <span class="mono">collider</span> 플래그는 커스텀 속성으로만 기록됩니다.</div><div class="pane-note es-only"><b>Fijado a Blender 5.2 LTS / API de datos primero.</b> Los fallos de contexto de poll() de <span class="mono">bpy.ops</span> son la clase de error en tiempo de ejecución nº 1, así que los meshes se construyen con bmesh + <span class="mono">bpy.data</span>. Idempotente (los objetos con el mismo nombre se reconstruyen), funciona tanto sin interfaz (<span class="mono">blender --background --python build_scene.py</span>) como en el espacio Scripting de la GUI. La exportación final sigue el <b>perfil de exportación</b> elegido arriba (GLB fijado a <span class="mono">use_active_scene=True</span>, USD vía <span class="mono">wm.usd_export</span> a .usda, FBX con el perfil medido solo-geometría). El motor de render se fija al valor correcto de 5.2, <span class="mono">BLENDER_EEVEE</span> (<span class="mono">BLENDER_EEVEE_NEXT</span> da error en 5.2). Los patrones se dibujan píxel a píxel en una imagen <span class="mono">bpy.data.images.new</span>, se <span class="mono">pack()</span> y se conectan vía un nodo TexImage: los nodos procedurales nunca viajan en GLB, así que no se usan. Los maniquíes se construyen como piezas (cabeza / torso / brazos / piernas) en una colección <span class="mono">MANNEQUIN_</span>: referencias de escala, no assets de personaje. En Blender no se construyen colisionadores: la marca <span class="mono">collider</span> solo se registra como propiedad personalizada.</div>
+      <div class="pane-note"><span class="ja-only">実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。</span><span class="en-only" data-t="実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。">On run, the script verifies its environment, saves a checkpoint copy of the .blend before changing anything, and at the end writes a measured report (scenedract_report.json) next to the script — import it in the Validation tab to attach the actual run to the certificate.</span><span class="zh-only">运行时,脚本会先验证环境,在更改任何内容之前保存检查点（.blend 的副本）,并在结束时将实测报告 scenedract_report.json 输出到脚本所在位置。在验证选项卡中导入后,证书将附上实际运行结果。</span><span class="ko-only">실행하면 스크립트는 환경을 확인하고, 아무것도 변경하기 전에 체크포인트(.blend 사본)를 저장하며, 종료 시 실측 리포트 scenedract_report.json을 스크립트와 같은 위치에 출력합니다. 검증 탭에서 가져오면 인증서에 실제 실행 결과가 첨부됩니다.</span><span class="es-only">Al ejecutarse, el script verifica su entorno, guarda una copia de control del .blend antes de cambiar nada y, al final, escribe un informe medido (scenedract_report.json) junto al script: impórtalo en la pestaña Validación para adjuntar la ejecución real al certificado.</span></div>
       <div class="codebox"><pre id="bpyCode"></pre></div>
       <div class="only-adv" data-vis="advanced" style="padding:12px 16px 16px">
         <div class="hint" id="advBpyStat" style="margin-top:0"></div>
@@ -791,6 +792,15 @@
         <button class="btn btn-ghost btn-sm" id="certTxtBtn"><span class="ja-only">QA証明書サマリ (.txt) をダウンロード</span><span class="en-only">Download QA certificate summary (.txt)</span><span class="zh-only">下载 QA 证书摘要 (.txt)</span><span class="ko-only">QA 인증서 요약 (.txt) 다운로드</span><span class="es-only">Descargar resumen del certificado QA (.txt)</span></button>
         <span class="hint ja-only">書き出しに同梱する品質証明書です: IRハッシュ、全TAチェックと結果、自動修復の全件、選択中プロファイルと実測ステータス、前提バージョン（Blender 5.2 / Unity 6.3）を記録します。機械可読版は上の「QA証明書 (.json)」。</span>
         <span class="hint en-only">The quality certificate that ships with the export: IR hash, every TA check and its result, all applied repairs, the active profile with its measured status, and target versions (Blender 5.2 / Unity 6.3). Machine-readable version: "QA certificate (.json)" above.</span><span class="hint zh-only">这是随导出附带的质量证书: 记录 IR 哈希、全部 TA 检查及其结果、全部自动修复、当前配置及其测量状态、前提版本（Blender 5.2 / Unity 6.3）。机器可读版在上方的「QA 证书 (.json)」。</span><span class="hint ko-only">내보내기에 동봉하는 품질 인증서입니다: IR 해시, 모든 TA 체크와 결과, 자동 수리 전체, 선택 중인 프로필과 실측 상태, 전제 버전(Blender 5.2 / Unity 6.3)을 기록합니다. 기계 판독판은 위의 'QA 인증서 (.json)'.</span><span class="hint es-only">El certificado de calidad que acompaña a la exportación: hash del IR, cada comprobación TA y su resultado, todas las reparaciones aplicadas, el perfil activo con su estado medido y las versiones objetivo (Blender 5.2 / Unity 6.3). Versión legible por máquina: «Certificado QA (.json)» arriba.</span>
+      </div>
+      <div class="rlogbox">
+        <h4><span class="ja-only">実測レポート（Blender 実行結果）</span><span class="en-only" data-t="実測レポート（Blender 実行結果）">Measured report (Blender run)</span><span class="zh-only">实测报告（Blender 运行结果）</span><span class="ko-only">실측 리포트(Blender 실행 결과)</span><span class="es-only">Informe medido (ejecución en Blender)</span></h4>
+        <p class="hint"><span class="ja-only">生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。</span><span class="en-only" data-t="生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。">When the generated Blender Python runs, it writes scenedract_report.json next to the script. Import that file here and the certificate upgrades from prediction-only to prediction + measured, with any differences shown here.</span><span class="zh-only">运行生成的 Blender Python 后,脚本所在位置会写出 scenedract_report.json。在此导入该文件,证书将从「仅预测」升级为「预测+实测」,预测与实测的差异会显示在这里。</span><span class="ko-only">생성된 Blender Python을 실행하면 스크립트와 같은 위치에 scenedract_report.json이 기록됩니다. 그 파일을 가져오면 인증서가 '예측만'에서 '예측+실측'으로 업데이트되고, 예측과 실측의 차이가 여기에 표시됩니다.</span><span class="es-only">Al ejecutar el Python de Blender generado, se escribe scenedract_report.json junto al script. Importa ese archivo aquí y el certificado pasa de «solo predicción» a «predicción + medido», con las diferencias mostradas aquí.</span></p>
+        <div class="btnrow">
+          <button class="btn btn-ghost btn-sm" id="measuredImportBtn" type="button"><span class="ja-only">実測レポートを取り込む (.json)</span><span class="en-only" data-t="実測レポートを取り込む (.json)">Import a measured report (.json)</span><span class="zh-only">导入实测报告 (.json)</span><span class="ko-only">실측 리포트 가져오기 (.json)</span><span class="es-only">Importar un informe medido (.json)</span></button>
+          <input type="file" id="measuredFile" accept=".json,application/json" hidden>
+        </div>
+        <div id="measuredBody" class="rlog"></div>
       </div>
       <div class="only-adv" data-vis="advanced" id="advRuleDetails" style="padding:0 16px 16px">
         <h4 style="margin:8px 0 6px;font-size:13.5px;font-weight:700"><span class="ja-only">上級: 検証ルールの詳細（閾値と根拠）</span><span class="en-only">Advanced: validation rules in detail (thresholds &amp; rationale)</span><span class="zh-only">高级: 验证规则详情（阈值与依据）</span><span class="ko-only">고급: 검증 규칙 상세(임계값과 근거)</span><span class="es-only">Avanzado: reglas de validación al detalle (umbrales y justificación)</span></h4>
@@ -2228,6 +2238,20 @@ function profText(p, base){
 var I18N = {
 
  "zh": {
+  "実測レポート（Blender 実行結果）": "实测报告（Blender 运行结果）",
+  "実測レポートを取り込む (.json)": "导入实测报告 (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "运行生成的 Blender Python 后,脚本所在位置会写出 scenedract_report.json。在此导入该文件,证书将从「仅预测」升级为「预测+实测」,预测与实测的差异会显示在这里。",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "尚未导入实测报告 — 当前证书仅为预测。",
+  "実測レポートを取り込みました。": "已导入实测报告。",
+  "実測レポートとして読み込めませんでした。": "无法将该文件读取为实测报告: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "此报告属于另一个场景(IR 哈希不一致),仅供参考,不会附到当前证书上。",
+  "実行前チェックポイント: ": "运行前检查点: ",
+  "関係の再評価（実測）: ": "关系再评估(实测): ",
+  " 件は実測不可": " 件无法测量",
+  "予測との差異:": "与预测的差异:",
+  "予測との差異はありません。": "与预测没有差异。",
+  "予測のみ — 実測レポート未取り込み": "仅预测 — 未导入实测报告",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "运行时,脚本会先验证环境,在更改任何内容之前保存检查点(.blend 的副本),并在结束时将实测报告 scenedract_report.json 输出到脚本所在位置。在验证选项卡中导入后,证书将附上实际运行结果。",
   "新しいバージョンがあります": "有新版本可用",
   "ダウンロード": "下载",
   "後で": "稍后",
@@ -2791,6 +2815,20 @@ var I18N = {
 
  },
  "zh-TW": {
+  "実測レポート（Blender 実行結果）": "實測報告（Blender 執行結果）",
+  "実測レポートを取り込む (.json)": "匯入實測報告 (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "執行生成的 Blender Python 後,指令碼所在位置會寫出 scenedract_report.json。在此匯入該檔案,證書將從「僅預測」升級為「預測+實測」,預測與實測的差異會顯示在這裡。",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "尚未匯入實測報告 — 目前證書僅為預測。",
+  "実測レポートを取り込みました。": "已匯入實測報告。",
+  "実測レポートとして読み込めませんでした。": "無法將該檔案讀取為實測報告: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "此報告屬於另一個場景(IR 雜湊不一致),僅供參考,不會附加到目前證書上。",
+  "実行前チェックポイント: ": "執行前檢查點: ",
+  "関係の再評価（実測）: ": "關係再評估(實測): ",
+  " 件は実測不可": " 件無法測量",
+  "予測との差異:": "與預測的差異:",
+  "予測との差異はありません。": "與預測沒有差異。",
+  "予測のみ — 実測レポート未取り込み": "僅預測 — 未匯入實測報告",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "執行時,指令碼會先驗證環境,在更改任何內容之前儲存檢查點(.blend 的副本),並在結束時將實測報告 scenedract_report.json 輸出到指令碼所在位置。在驗證分頁中匯入後,證書將附上實際執行結果。",
   "新しいバージョンがあります": "有新版本可用",
   "ダウンロード": "下載",
   "後で": "稍後",
@@ -3354,6 +3392,20 @@ var I18N = {
 
  },
  "ko": {
+  "実測レポート（Blender 実行結果）": "실측 리포트(Blender 실행 결과)",
+  "実測レポートを取り込む (.json)": "실측 리포트 가져오기 (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "생성된 Blender Python을 실행하면 스크립트와 같은 위치에 scenedract_report.json이 기록됩니다. 그 파일을 가져오면 인증서가 '예측만'에서 '예측+실측'으로 업데이트되고, 예측과 실측의 차이가 여기에 표시됩니다.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "아직 실측 리포트가 가져와지지 않았습니다 — 현재 인증서는 예측만입니다.",
+  "実測レポートを取り込みました。": "실측 리포트를 가져왔습니다.",
+  "実測レポートとして読み込めませんでした。": "해당 파일을 실측 리포트로 읽을 수 없었습니다: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "이 리포트는 현재 장면과 다른 IR(해시 불일치)의 것입니다. 인증서에는 첨부되지 않으며 참고용으로만 표시됩니다.",
+  "実行前チェックポイント: ": "실행 전 체크포인트: ",
+  "関係の再評価（実測）: ": "관계 재평가(실측): ",
+  " 件は実測不可": " 건은 실측 불가",
+  "予測との差異:": "예측과의 차이:",
+  "予測との差異はありません。": "예측과의 차이가 없습니다.",
+  "予測のみ — 実測レポート未取り込み": "예측만 — 실측 리포트 미가져옴",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "실행하면 스크립트는 환경을 확인하고, 아무것도 변경하기 전에 체크포인트(.blend 사본)를 저장하며, 종료 시 실측 리포트 scenedract_report.json을 스크립트와 같은 위치에 출력합니다. 검증 탭에서 가져오면 인증서에 실제 실행 결과가 첨부됩니다.",
   "新しいバージョンがあります": "새 버전을 사용할 수 있습니다",
   "ダウンロード": "다운로드",
   "後で": "나중에",
@@ -3917,6 +3969,20 @@ var I18N = {
 
  },
  "es": {
+  "実測レポート（Blender 実行結果）": "Informe medido (ejecución en Blender)",
+  "実測レポートを取り込む (.json)": "Importar un informe medido (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Al ejecutar el Python de Blender generado, se escribe scenedract_report.json junto al script. Importa ese archivo aquí y el certificado pasa de «solo predicción» a «predicción + medido», con las diferencias mostradas aquí.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Aún no se ha importado ningún informe medido: el certificado es solo de predicción.",
+  "実測レポートを取り込みました。": "Informe medido importado.",
+  "実測レポートとして読み込めませんでした。": "No se pudo leer ese archivo como informe medido: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Este informe pertenece a otra escena (el hash del IR no coincide): se muestra solo como referencia y no se adjunta al certificado actual.",
+  "実行前チェックポイント: ": "Punto de control previo a la ejecución: ",
+  "関係の再評価（実測）: ": "Relaciones reevaluadas (medido): ",
+  " 件は実測不可": " no medibles",
+  "予測との差異:": "Diferencias con la predicción:",
+  "予測との差異はありません。": "Sin diferencias con la predicción.",
+  "予測のみ — 実測レポート未取り込み": "Solo predicción — sin informe medido importado",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Al ejecutarse, el script verifica su entorno, guarda una copia de control del .blend antes de cambiar nada y, al final, escribe un informe medido (scenedract_report.json) junto al script: impórtalo en la pestaña Validación para adjuntar la ejecución real al certificado.",
   "新しいバージョンがあります": "Hay una nueva versión disponible",
   "ダウンロード": "Descargar",
   "後で": "Más tarde",
@@ -4480,6 +4546,20 @@ var I18N = {
 
  },
  "fr": {
+  "実測レポート（Blender 実行結果）": "Rapport mesuré (exécution Blender)",
+  "実測レポートを取り込む (.json)": "Importer un rapport mesuré (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Lorsque le Python Blender généré s'exécute, il écrit scenedract_report.json à côté du script. Importez ce fichier ici et le certificat passe de « prédiction seule » à « prédiction + mesuré », avec les différences affichées ici.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Aucun rapport mesuré importé pour le moment — le certificat est en prédiction seule.",
+  "実測レポートを取り込みました。": "Rapport mesuré importé.",
+  "実測レポートとして読み込めませんでした。": "Impossible de lire ce fichier comme un rapport mesuré : ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Ce rapport appartient à une autre scène (le hash de l'IR ne correspond pas) — affiché à titre de référence uniquement ; il n'est pas joint au certificat actuel.",
+  "実行前チェックポイント: ": "Point de contrôle avant exécution : ",
+  "関係の再評価（実測）: ": "Relations réévaluées (mesuré) : ",
+  " 件は実測不可": " non mesurables",
+  "予測との差異:": "Différences avec la prédiction :",
+  "予測との差異はありません。": "Aucune différence avec la prédiction.",
+  "予測のみ — 実測レポート未取り込み": "Prédiction seule — aucun rapport mesuré importé",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "À l'exécution, le script vérifie son environnement, enregistre une copie de contrôle du .blend avant de rien modifier et, à la fin, écrit un rapport mesuré (scenedract_report.json) à côté du script — importez-le dans l'onglet Validation pour joindre l'exécution réelle au certificat.",
   "新しいバージョンがあります": "Une nouvelle version est disponible",
   "ダウンロード": "Télécharger",
   "後で": "Plus tard",
@@ -5043,6 +5123,20 @@ var I18N = {
 
  },
  "de": {
+  "実測レポート（Blender 実行結果）": "Messbericht (Blender-Lauf)",
+  "実測レポートを取り込む (.json)": "Messbericht importieren (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Wenn das generierte Blender-Python läuft, schreibt es scenedract_report.json neben das Skript. Importieren Sie diese Datei hier, und das Zertifikat wird von „nur Vorhersage\" zu „Vorhersage + gemessen\" aufgewertet; Unterschiede werden hier angezeigt.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Noch kein Messbericht importiert — das Zertifikat enthält nur die Vorhersage.",
+  "実測レポートを取り込みました。": "Messbericht importiert.",
+  "実測レポートとして読み込めませんでした。": "Diese Datei konnte nicht als Messbericht gelesen werden: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Dieser Bericht gehört zu einer anderen Szene (IR-Hash stimmt nicht überein) — nur als Referenz angezeigt; er wird nicht an das aktuelle Zertifikat angehängt.",
+  "実行前チェックポイント: ": "Prüfpunkt vor dem Lauf: ",
+  "関係の再評価（実測）: ": "Beziehungen neu bewertet (gemessen): ",
+  " 件は実測不可": " nicht messbar",
+  "予測との差異:": "Unterschiede zur Vorhersage:",
+  "予測との差異はありません。": "Keine Unterschiede zur Vorhersage.",
+  "予測のみ — 実測レポート未取り込み": "Nur Vorhersage — kein Messbericht importiert",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Beim Lauf prüft das Skript seine Umgebung, speichert vor jeder Änderung eine Prüfpunkt-Kopie der .blend und schreibt am Ende einen Messbericht (scenedract_report.json) neben das Skript — importieren Sie ihn im Tab „Validierung\", um den tatsächlichen Lauf an das Zertifikat anzuhängen.",
   "新しいバージョンがあります": "Eine neue Version ist verfügbar",
   "ダウンロード": "Herunterladen",
   "後で": "Später",
@@ -5606,6 +5700,20 @@ var I18N = {
 
  },
  "it": {
+  "実測レポート（Blender 実行結果）": "Rapporto misurato (esecuzione Blender)",
+  "実測レポートを取り込む (.json)": "Importa un rapporto misurato (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Quando il Python Blender generato viene eseguito, scrive scenedract_report.json accanto allo script. Importa quel file qui e il certificato passa da «solo previsione» a «previsione + misurato», con le differenze mostrate qui.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Nessun rapporto misurato importato — il certificato è solo previsione.",
+  "実測レポートを取り込みました。": "Rapporto misurato importato.",
+  "実測レポートとして読み込めませんでした。": "Impossibile leggere quel file come rapporto misurato: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Questo rapporto appartiene a un'altra scena (hash IR non corrispondente) — mostrato solo come riferimento; non è allegato al certificato attuale.",
+  "実行前チェックポイント: ": "Checkpoint prima dell'esecuzione: ",
+  "関係の再評価（実測）: ": "Relazioni rivalutate (misurato): ",
+  " 件は実測不可": " non misurabili",
+  "予測との差異:": "Differenze dalla previsione:",
+  "予測との差異はありません。": "Nessuna differenza dalla previsione.",
+  "予測のみ — 実測レポート未取り込み": "Solo previsione — nessun rapporto misurato importato",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "All'esecuzione, lo script verifica l'ambiente, salva una copia di checkpoint del .blend prima di modificare qualsiasi cosa e, alla fine, scrive un rapporto misurato (scenedract_report.json) accanto allo script: importalo nella scheda Convalida per allegare l'esecuzione reale al certificato.",
   "新しいバージョンがあります": "È disponibile una nuova versione",
   "ダウンロード": "Scarica",
   "後で": "Più tardi",
@@ -6169,6 +6277,20 @@ var I18N = {
 
  },
  "pt-BR": {
+  "実測レポート（Blender 実行結果）": "Relatório medido (execução no Blender)",
+  "実測レポートを取り込む (.json)": "Importar um relatório medido (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Quando o Python do Blender gerado é executado, ele grava scenedract_report.json ao lado do script. Importe esse arquivo aqui e o certificado passa de «somente previsão» para «previsão + medido», com as diferenças mostradas aqui.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Nenhum relatório medido importado ainda — o certificado é somente previsão.",
+  "実測レポートを取り込みました。": "Relatório medido importado.",
+  "実測レポートとして読み込めませんでした。": "Não foi possível ler esse arquivo como relatório medido: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Este relatório pertence a outra cena (o hash do IR não corresponde) — exibido apenas como referência; não é anexado ao certificado atual.",
+  "実行前チェックポイント: ": "Ponto de verificação antes da execução: ",
+  "関係の再評価（実測）: ": "Relações reavaliadas (medido): ",
+  " 件は実測不可": " não mensuráveis",
+  "予測との差異:": "Diferenças em relação à previsão:",
+  "予測との差異はありません。": "Nenhuma diferença em relação à previsão.",
+  "予測のみ — 実測レポート未取り込み": "Somente previsão — nenhum relatório medido importado",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Ao ser executado, o script verifica o ambiente, salva uma cópia de checkpoint do .blend antes de alterar qualquer coisa e, no final, grava um relatório medido (scenedract_report.json) ao lado do script — importe-o na aba Validação para anexar a execução real ao certificado.",
   "新しいバージョンがあります": "Uma nova versão está disponível",
   "ダウンロード": "Baixar",
   "後で": "Depois",
@@ -6732,6 +6854,20 @@ var I18N = {
 
  },
  "pt-PT": {
+  "実測レポート（Blender 実行結果）": "Relatório medido (execução no Blender)",
+  "実測レポートを取り込む (.json)": "Importar um relatório medido (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Quando o Python do Blender gerado é executado, grava scenedract_report.json ao lado do script. Importe esse ficheiro aqui e o certificado passa de «apenas previsão» para «previsão + medido», com as diferenças mostradas aqui.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Ainda não foi importado nenhum relatório medido — o certificado é apenas previsão.",
+  "実測レポートを取り込みました。": "Relatório medido importado.",
+  "実測レポートとして読み込めませんでした。": "Não foi possível ler esse ficheiro como relatório medido: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Este relatório pertence a outra cena (o hash do IR não corresponde) — mostrado apenas como referência; não é anexado ao certificado atual.",
+  "実行前チェックポイント: ": "Ponto de verificação antes da execução: ",
+  "関係の再評価（実測）: ": "Relações reavaliadas (medido): ",
+  " 件は実測不可": " não mensuráveis",
+  "予測との差異:": "Diferenças em relação à previsão:",
+  "予測との差異はありません。": "Nenhuma diferença em relação à previsão.",
+  "予測のみ — 実測レポート未取り込み": "Apenas previsão — nenhum relatório medido importado",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Ao ser executado, o script verifica o ambiente, guarda uma cópia de checkpoint do .blend antes de alterar o que quer que seja e, no fim, grava um relatório medido (scenedract_report.json) ao lado do script — importe-o no separador Validação para anexar a execução real ao certificado.",
   "新しいバージョンがあります": "Está disponível uma nova versão",
   "ダウンロード": "Transferir",
   "後で": "Mais tarde",
@@ -7295,6 +7431,20 @@ var I18N = {
 
  },
  "ru": {
+  "実測レポート（Blender 実行結果）": "Измеренный отчёт (запуск в Blender)",
+  "実測レポートを取り込む (.json)": "Импортировать измеренный отчёт (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Когда сгенерированный Blender Python выполняется, он записывает scenedract_report.json рядом со скриптом. Импортируйте этот файл здесь, и сертификат обновится с «только прогноз» до «прогноз + измерено», а различия будут показаны здесь.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Измеренный отчёт ещё не импортирован — сертификат содержит только прогноз.",
+  "実測レポートを取り込みました。": "Измеренный отчёт импортирован.",
+  "実測レポートとして読み込めませんでした。": "Не удалось прочитать этот файл как измеренный отчёт: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Этот отчёт относится к другой сцене (хеш IR не совпадает) — показан только для справки и не прикрепляется к текущему сертификату.",
+  "実行前チェックポイント: ": "Контрольная точка перед запуском: ",
+  "関係の再評価（実測）: ": "Отношения переоценены (измерено): ",
+  " 件は実測不可": " не поддаются измерению",
+  "予測との差異:": "Различия с прогнозом:",
+  "予測との差異はありません。": "Различий с прогнозом нет.",
+  "予測のみ — 実測レポート未取り込み": "Только прогноз — измеренный отчёт не импортирован",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "При запуске скрипт проверяет своё окружение, сохраняет контрольную копию .blend перед любыми изменениями и в конце записывает измеренный отчёт (scenedract_report.json) рядом со скриптом — импортируйте его на вкладке «Проверка», чтобы прикрепить фактический запуск к сертификату.",
   "新しいバージョンがあります": "Доступна новая версия",
   "ダウンロード": "Скачать",
   "後で": "Позже",
@@ -7858,6 +8008,20 @@ var I18N = {
 
  },
  "uk": {
+  "実測レポート（Blender 実行結果）": "Виміряний звіт (запуск у Blender)",
+  "実測レポートを取り込む (.json)": "Імпортувати виміряний звіт (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Коли згенерований Blender Python виконується, він записує scenedract_report.json поруч зі скриптом. Імпортуйте цей файл сюди, і сертифікат оновиться з «лише прогноз» до «прогноз + виміряно», а відмінності буде показано тут.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Виміряний звіт ще не імпортовано — сертифікат містить лише прогноз.",
+  "実測レポートを取り込みました。": "Виміряний звіт імпортовано.",
+  "実測レポートとして読み込めませんでした。": "Не вдалося прочитати цей файл як виміряний звіт: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Цей звіт належить до іншої сцени (хеш IR не збігається) — показано лише для довідки; він не прикріплюється до поточного сертифіката.",
+  "実行前チェックポイント: ": "Контрольна точка перед запуском: ",
+  "関係の再評価（実測）: ": "Відношення переоцінено (виміряно): ",
+  " 件は実測不可": " не піддаються вимірюванню",
+  "予測との差異:": "Відмінності від прогнозу:",
+  "予測との差異はありません。": "Відмінностей від прогнозу немає.",
+  "予測のみ — 実測レポート未取り込み": "Лише прогноз — виміряний звіт не імпортовано",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Під час запуску скрипт перевіряє своє середовище, зберігає контрольну копію .blend перед будь-якими змінами й наприкінці записує виміряний звіт (scenedract_report.json) поруч зі скриптом — імпортуйте його на вкладці «Перевірка», щоб прикріпити фактичний запуск до сертифіката.",
   "新しいバージョンがあります": "Доступна нова версія",
   "ダウンロード": "Завантажити",
   "後で": "Пізніше",
@@ -8421,6 +8585,20 @@ var I18N = {
 
  },
  "nl": {
+  "実測レポート（Blender 実行結果）": "Gemeten rapport (Blender-run)",
+  "実測レポートを取り込む (.json)": "Een gemeten rapport importeren (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Wanneer de gegenereerde Blender-Python draait, schrijft deze scenedract_report.json naast het script. Importeer dat bestand hier en het certificaat wordt bijgewerkt van 'alleen voorspelling' naar 'voorspelling + gemeten', met de verschillen hier weergegeven.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Nog geen gemeten rapport geïmporteerd — het certificaat is alleen voorspelling.",
+  "実測レポートを取り込みました。": "Gemeten rapport geïmporteerd.",
+  "実測レポートとして読み込めませんでした。": "Dat bestand kon niet als gemeten rapport worden gelezen: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Dit rapport hoort bij een andere scène (IR-hash komt niet overeen) — alleen ter referentie getoond; het wordt niet aan het huidige certificaat gehecht.",
+  "実行前チェックポイント: ": "Controlepunt vóór de run: ",
+  "関係の再評価（実測）: ": "Relaties opnieuw geëvalueerd (gemeten): ",
+  " 件は実測不可": " niet meetbaar",
+  "予測との差異:": "Verschillen met de voorspelling:",
+  "予測との差異はありません。": "Geen verschillen met de voorspelling.",
+  "予測のみ — 実測レポート未取り込み": "Alleen voorspelling — geen gemeten rapport geïmporteerd",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Bij het draaien controleert het script zijn omgeving, bewaart het een controlepuntkopie van de .blend voordat er iets wordt gewijzigd, en schrijft het aan het einde een gemeten rapport (scenedract_report.json) naast het script — importeer het op het tabblad Validatie om de werkelijke run aan het certificaat te hechten.",
   "新しいバージョンがあります": "Er is een nieuwe versie beschikbaar",
   "ダウンロード": "Downloaden",
   "後で": "Later",
@@ -8984,6 +9162,20 @@ var I18N = {
 
  },
  "pl": {
+  "実測レポート（Blender 実行結果）": "Zmierzony raport (uruchomienie w Blenderze)",
+  "実測レポートを取り込む (.json)": "Importuj zmierzony raport (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Gdy wygenerowany Python Blendera zostanie uruchomiony, zapisuje scenedract_report.json obok skryptu. Zaimportuj ten plik tutaj, a certyfikat zaktualizuje się z „tylko prognoza\" do „prognoza + pomiar\", a różnice zostaną pokazane tutaj.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Nie zaimportowano jeszcze zmierzonego raportu — certyfikat to tylko prognoza.",
+  "実測レポートを取り込みました。": "Zaimportowano zmierzony raport.",
+  "実測レポートとして読み込めませんでした。": "Nie udało się odczytać tego pliku jako zmierzonego raportu: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Ten raport należy do innej sceny (hash IR się nie zgadza) — pokazano go tylko poglądowo; nie jest dołączany do bieżącego certyfikatu.",
+  "実行前チェックポイント: ": "Punkt kontrolny przed uruchomieniem: ",
+  "関係の再評価（実測）: ": "Relacje ocenione ponownie (pomiar): ",
+  " 件は実測不可": " niemierzalnych",
+  "予測との差異:": "Różnice względem prognozy:",
+  "予測との差異はありません。": "Brak różnic względem prognozy.",
+  "予測のみ — 実測レポート未取り込み": "Tylko prognoza — nie zaimportowano zmierzonego raportu",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Przy uruchomieniu skrypt sprawdza swoje środowisko, zapisuje kopię kontrolną pliku .blend przed wprowadzeniem jakichkolwiek zmian, a na końcu zapisuje zmierzony raport (scenedract_report.json) obok skryptu — zaimportuj go na karcie Walidacja, aby dołączyć rzeczywiste uruchomienie do certyfikatu.",
   "新しいバージョンがあります": "Dostępna jest nowa wersja",
   "ダウンロード": "Pobierz",
   "後で": "Później",
@@ -9547,6 +9739,20 @@ var I18N = {
 
  },
  "cs": {
+  "実測レポート（Blender 実行結果）": "Změřená zpráva (běh v Blenderu)",
+  "実測レポートを取り込む (.json)": "Importovat změřenou zprávu (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Když se vygenerovaný Blender Python spustí, zapíše scenedract_report.json vedle skriptu. Importujte ten soubor sem a certifikát se povýší z „jen předpověď\" na „předpověď + změřeno\" a rozdíly se zobrazí zde.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Zatím nebyla importována žádná změřená zpráva — certifikát je jen předpověď.",
+  "実測レポートを取り込みました。": "Změřená zpráva importována.",
+  "実測レポートとして読み込めませんでした。": "Ten soubor se nepodařilo načíst jako změřenou zprávu: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Tato zpráva patří k jiné scéně (hash IR se neshoduje) — zobrazena jen pro informaci; k aktuálnímu certifikátu se nepřipojuje.",
+  "実行前チェックポイント: ": "Kontrolní bod před během: ",
+  "関係の再評価（実測）: ": "Vztahy znovu vyhodnoceny (změřeno): ",
+  " 件は実測不可": " neměřitelných",
+  "予測との差異:": "Rozdíly oproti předpovědi:",
+  "予測との差異はありません。": "Žádné rozdíly oproti předpovědi.",
+  "予測のみ — 実測レポート未取り込み": "Jen předpověď — žádná změřená zpráva neimportována",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Při spuštění skript ověří své prostředí, před jakoukoli změnou uloží kontrolní kopii .blend a na konci zapíše změřenou zprávu (scenedract_report.json) vedle skriptu — importujte ji na kartě Ověření a připojte skutečný běh k certifikátu.",
   "新しいバージョンがあります": "Je k dispozici nová verze",
   "ダウンロード": "Stáhnout",
   "後で": "Později",
@@ -10110,6 +10316,20 @@ var I18N = {
 
  },
  "sk": {
+  "実測レポート（Blender 実行結果）": "Zmeraná správa (beh v Blenderi)",
+  "実測レポートを取り込む (.json)": "Importovať zmeranú správu (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Keď sa vygenerovaný Blender Python spustí, zapíše scenedract_report.json vedľa skriptu. Importujte ten súbor sem a certifikát sa povýši z „iba predpoveď\" na „predpoveď + zmerané\" a rozdiely sa zobrazia tu.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Zatiaľ nebola importovaná žiadna zmeraná správa — certifikát je iba predpoveď.",
+  "実測レポートを取り込みました。": "Zmeraná správa importovaná.",
+  "実測レポートとして読み込めませんでした。": "Ten súbor sa nepodarilo načítať ako zmeranú správu: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Táto správa patrí k inej scéne (hash IR sa nezhoduje) — zobrazená len pre informáciu; k aktuálnemu certifikátu sa nepripája.",
+  "実行前チェックポイント: ": "Kontrolný bod pred behom: ",
+  "関係の再評価（実測）: ": "Vzťahy znova vyhodnotené (zmerané): ",
+  " 件は実測不可": " nemerateľných",
+  "予測との差異:": "Rozdiely oproti predpovedi:",
+  "予測との差異はありません。": "Žiadne rozdiely oproti predpovedi.",
+  "予測のみ — 実測レポート未取り込み": "Iba predpoveď — žiadna zmeraná správa neimportovaná",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Pri spustení skript overí svoje prostredie, pred akoukoľvek zmenou uloží kontrolnú kópiu .blend a na konci zapíše zmeranú správu (scenedract_report.json) vedľa skriptu — importujte ju na karte Overenie a pripojte skutočný beh k certifikátu.",
   "新しいバージョンがあります": "Je k dispozícii nová verzia",
   "ダウンロード": "Stiahnuť",
   "後で": "Neskôr",
@@ -10673,6 +10893,20 @@ var I18N = {
 
  },
  "hu": {
+  "実測レポート（Blender 実行結果）": "Mért jelentés (Blender-futtatás)",
+  "実測レポートを取り込む (.json)": "Mért jelentés importálása (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Amikor a generált Blender Python lefut, a scenedract_report.json fájlt a szkript mellé írja. Importálja ide azt a fájlt, és a tanúsítvány „csak előrejelzés\"-ről „előrejelzés + mért\" szintre lép, az eltérések pedig itt jelennek meg.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Még nincs importált mért jelentés — a tanúsítvány csak előrejelzés.",
+  "実測レポートを取り込みました。": "Mért jelentés importálva.",
+  "実測レポートとして読み込めませんでした。": "A fájlt nem sikerült mért jelentésként beolvasni: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Ez a jelentés egy másik jelenethez tartozik (az IR hash nem egyezik) — csak tájékoztatásul látható; nem csatolódik a jelenlegi tanúsítványhoz.",
+  "実行前チェックポイント: ": "Ellenőrzőpont futtatás előtt: ",
+  "関係の再評価（実測）: ": "Kapcsolatok újraértékelve (mért): ",
+  " 件は実測不可": " nem mérhető",
+  "予測との差異:": "Eltérések az előrejelzéstől:",
+  "予測との差異はありません。": "Nincs eltérés az előrejelzéstől.",
+  "予測のみ — 実測レポート未取り込み": "Csak előrejelzés — nincs importált mért jelentés",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Futtatáskor a szkript ellenőrzi a környezetét, bármilyen módosítás előtt ellenőrzőpont-másolatot ment a .blend fájlról, és a végén mért jelentést (scenedract_report.json) ír a szkript mellé — importálja az Ellenőrzés lapon, hogy a tényleges futtatást a tanúsítványhoz csatolja.",
   "新しいバージョンがあります": "Új verzió érhető el",
   "ダウンロード": "Letöltés",
   "後で": "Később",
@@ -11236,6 +11470,20 @@ var I18N = {
 
  },
  "ro": {
+  "実測レポート（Blender 実行結果）": "Raport măsurat (rulare Blender)",
+  "実測レポートを取り込む (.json)": "Importă un raport măsurat (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Când rulează Python-ul Blender generat, acesta scrie scenedract_report.json lângă script. Importă acel fișier aici și certificatul se actualizează de la „doar predicție\" la „predicție + măsurat\", cu diferențele afișate aici.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Niciun raport măsurat importat încă — certificatul este doar predicție.",
+  "実測レポートを取り込みました。": "Raport măsurat importat.",
+  "実測レポートとして読み込めませんでした。": "Fișierul nu a putut fi citit ca raport măsurat: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Acest raport aparține altei scene (hash-ul IR nu se potrivește) — afișat doar ca referință; nu este atașat certificatului curent.",
+  "実行前チェックポイント: ": "Punct de control înainte de rulare: ",
+  "関係の再評価（実測）: ": "Relații reevaluate (măsurat): ",
+  " 件は実測不可": " nemăsurabile",
+  "予測との差異:": "Diferențe față de predicție:",
+  "予測との差異はありません。": "Nicio diferență față de predicție.",
+  "予測のみ — 実測レポート未取り込み": "Doar predicție — niciun raport măsurat importat",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "La rulare, scriptul își verifică mediul, salvează o copie de control a fișierului .blend înainte de orice modificare și, la final, scrie un raport măsurat (scenedract_report.json) lângă script — importă-l în fila Validare pentru a atașa rularea reală la certificat.",
   "新しいバージョンがあります": "Este disponibilă o versiune nouă",
   "ダウンロード": "Descarcă",
   "後で": "Mai târziu",
@@ -11799,6 +12047,20 @@ var I18N = {
 
  },
  "bg": {
+  "実測レポート（Blender 実行結果）": "Измерен отчет (изпълнение в Blender)",
+  "実測レポートを取り込む (.json)": "Импортиране на измерен отчет (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Когато генерираният Blender Python се изпълни, той записва scenedract_report.json до скрипта. Импортирайте този файл тук и сертификатът ще се надгради от „само прогноза\" до „прогноза + измерено\", а разликите ще се покажат тук.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Все още няма импортиран измерен отчет — сертификатът е само прогноза.",
+  "実測レポートを取り込みました。": "Измереният отчет е импортиран.",
+  "実測レポートとして読み込めませんでした。": "Файлът не можа да бъде прочетен като измерен отчет: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Този отчет принадлежи на друга сцена (хешът на IR не съвпада) — показан е само за справка и не се прикрепя към текущия сертификат.",
+  "実行前チェックポイント: ": "Контролна точка преди изпълнение: ",
+  "関係の再評価（実測）: ": "Връзки, преоценени (измерено): ",
+  " 件は実測不可": " не подлежат на измерване",
+  "予測との差異:": "Разлики спрямо прогнозата:",
+  "予測との差異はありません。": "Няма разлики спрямо прогнозата.",
+  "予測のみ — 実測レポート未取り込み": "Само прогноза — няма импортиран измерен отчет",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "При изпълнение скриптът проверява средата си, запазва контролно копие на .blend, преди да промени каквото и да било, и накрая записва измерен отчет (scenedract_report.json) до скрипта — импортирайте го в раздела „Проверка\", за да прикрепите действителното изпълнение към сертификата.",
   "新しいバージョンがあります": "Налична е нова версия",
   "ダウンロード": "Изтегляне",
   "後で": "По-късно",
@@ -12362,6 +12624,20 @@ var I18N = {
 
  },
  "hr": {
+  "実測レポート（Blender 実行結果）": "Izmjereni izvještaj (pokretanje u Blenderu)",
+  "実測レポートを取り込む (.json)": "Uvezi izmjereni izvještaj (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Kada se generirani Blender Python pokrene, zapisuje scenedract_report.json pokraj skripte. Uvezite tu datoteku ovdje i certifikat će se nadograditi s „samo predviđanje\" na „predviđanje + izmjereno\", a razlike će se prikazati ovdje.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Još nije uvezen nijedan izmjereni izvještaj — certifikat je samo predviđanje.",
+  "実測レポートを取り込みました。": "Izmjereni izvještaj je uvezen.",
+  "実測レポートとして読み込めませんでした。": "Ta se datoteka nije mogla pročitati kao izmjereni izvještaj: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Ovaj izvještaj pripada drugoj sceni (hash IR-a se ne podudara) — prikazan je samo kao referenca i ne prilaže se trenutnom certifikatu.",
+  "実行前チェックポイント: ": "Kontrolna točka prije pokretanja: ",
+  "関係の再評価（実測）: ": "Odnosi ponovno procijenjeni (izmjereno): ",
+  " 件は実測不可": " nije moguće izmjeriti",
+  "予測との差異:": "Razlike u odnosu na predviđanje:",
+  "予測との差異はありません。": "Nema razlika u odnosu na predviđanje.",
+  "予測のみ — 実測レポート未取り込み": "Samo predviđanje — nije uvezen izmjereni izvještaj",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Pri pokretanju skripta provjerava svoje okruženje, sprema kontrolnu kopiju .blend datoteke prije bilo kakve izmjene i na kraju zapisuje izmjereni izvještaj (scenedract_report.json) pokraj skripte — uvezite ga na kartici Validacija kako biste certifikatu priložili stvarno pokretanje.",
   "新しいバージョンがあります": "Dostupna je nova verzija",
   "ダウンロード": "Preuzmi",
   "後で": "Kasnije",
@@ -12925,6 +13201,20 @@ var I18N = {
 
  },
  "el": {
+  "実測レポート（Blender 実行結果）": "Μετρημένη αναφορά (εκτέλεση Blender)",
+  "実測レポートを取り込む (.json)": "Εισαγωγή μετρημένης αναφοράς (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Όταν εκτελείται το παραγόμενο Blender Python, γράφει το scenedract_report.json δίπλα στο σενάριο. Εισαγάγετε αυτό το αρχείο εδώ και το πιστοποιητικό αναβαθμίζεται από «μόνο πρόβλεψη» σε «πρόβλεψη + μετρημένο», με τις διαφορές να εμφανίζονται εδώ.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Δεν έχει εισαχθεί ακόμη μετρημένη αναφορά — το πιστοποιητικό είναι μόνο πρόβλεψη.",
+  "実測レポートを取り込みました。": "Η μετρημένη αναφορά εισήχθη.",
+  "実測レポートとして読み込めませんでした。": "Δεν ήταν δυνατή η ανάγνωση αυτού του αρχείου ως μετρημένης αναφοράς: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Αυτή η αναφορά ανήκει σε άλλη σκηνή (το hash του IR δεν ταιριάζει) — εμφανίζεται μόνο για αναφορά· δεν επισυνάπτεται στο τρέχον πιστοποιητικό.",
+  "実行前チェックポイント: ": "Σημείο ελέγχου πριν την εκτέλεση: ",
+  "関係の再評価（実測）: ": "Σχέσεις επανεκτιμημένες (μετρημένο): ",
+  " 件は実測不可": " μη μετρήσιμα",
+  "予測との差異:": "Διαφορές από την πρόβλεψη:",
+  "予測との差異はありません。": "Καμία διαφορά από την πρόβλεψη.",
+  "予測のみ — 実測レポート未取り込み": "Μόνο πρόβλεψη — δεν έχει εισαχθεί μετρημένη αναφορά",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Κατά την εκτέλεση, το σενάριο ελέγχει το περιβάλλον του, αποθηκεύει ένα αντίγραφο ελέγχου του .blend πριν αλλάξει οτιδήποτε και, στο τέλος, γράφει μια μετρημένη αναφορά (scenedract_report.json) δίπλα στο σενάριο — εισαγάγετέ την στην καρτέλα Επικύρωση για να επισυνάψετε την πραγματική εκτέλεση στο πιστοποιητικό.",
   "新しいバージョンがあります": "Υπάρχει διαθέσιμη νέα έκδοση",
   "ダウンロード": "Λήψη",
   "後で": "Αργότερα",
@@ -13488,6 +13778,20 @@ var I18N = {
 
  },
  "tr": {
+  "実測レポート（Blender 実行結果）": "Ölçülen rapor (Blender çalışması)",
+  "実測レポートを取り込む (.json)": "Ölçülen raporu içe aktar (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Oluşturulan Blender Python çalıştırıldığında, betiğin yanına scenedract_report.json yazar. Bu dosyayı buraya aktarın; sertifika «yalnızca tahmin»den «tahmin + ölçülen»e yükselir ve farklar burada gösterilir.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Henüz ölçülen rapor içe aktarılmadı — sertifika yalnızca tahmindir.",
+  "実測レポートを取り込みました。": "Ölçülen rapor içe aktarıldı.",
+  "実測レポートとして読み込めませんでした。": "Bu dosya ölçülen rapor olarak okunamadı: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Bu rapor başka bir sahneye ait (IR özeti uyuşmuyor) — yalnızca başvuru için gösterilir; geçerli sertifikaya eklenmez.",
+  "実行前チェックポイント: ": "Çalışma öncesi denetim noktası: ",
+  "関係の再評価（実測）: ": "İlişkiler yeniden değerlendirildi (ölçülen): ",
+  " 件は実測不可": " ölçülemiyor",
+  "予測との差異:": "Tahminden farklar:",
+  "予測との差異はありません。": "Tahminden fark yok.",
+  "予測のみ — 実測レポート未取り込み": "Yalnızca tahmin — ölçülen rapor içe aktarılmadı",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Betik çalışırken ortamını doğrular, herhangi bir değişiklikten önce .blend dosyasının bir denetim noktası kopyasını kaydeder ve sonunda betiğin yanına ölçülen bir rapor (scenedract_report.json) yazar — gerçek çalışmayı sertifikaya eklemek için bunu Doğrulama sekmesinde içe aktarın.",
   "新しいバージョンがあります": "Yeni bir sürüm mevcut",
   "ダウンロード": "İndir",
   "後で": "Daha sonra",
@@ -14051,6 +14355,20 @@ var I18N = {
 
  },
  "sv": {
+  "実測レポート（Blender 実行結果）": "Uppmätt rapport (Blender-körning)",
+  "実測レポートを取り込む (.json)": "Importera en uppmätt rapport (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "När det genererade Blender-Python-skriptet körs skriver det scenedract_report.json bredvid skriptet. Importera filen här så uppgraderas certifikatet från ”endast förutsägelse” till ”förutsägelse + uppmätt”, och skillnaderna visas här.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Ingen uppmätt rapport importerad ännu — certifikatet är endast förutsägelse.",
+  "実測レポートを取り込みました。": "Uppmätt rapport importerad.",
+  "実測レポートとして読み込めませんでした。": "Filen kunde inte läsas som en uppmätt rapport: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Denna rapport tillhör en annan scen (IR-hashen stämmer inte) — visas endast som referens; den bifogas inte det aktuella certifikatet.",
+  "実行前チェックポイント: ": "Kontrollpunkt före körning: ",
+  "関係の再評価（実測）: ": "Relationer omvärderade (uppmätt): ",
+  " 件は実測不可": " ej mätbara",
+  "予測との差異:": "Skillnader mot förutsägelsen:",
+  "予測との差異はありません。": "Inga skillnader mot förutsägelsen.",
+  "予測のみ — 実測レポート未取り込み": "Endast förutsägelse — ingen uppmätt rapport importerad",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Vid körning kontrollerar skriptet sin miljö, sparar en kontrollpunktskopia av .blend-filen innan något ändras och skriver slutligen en uppmätt rapport (scenedract_report.json) bredvid skriptet — importera den på fliken Validering för att bifoga den faktiska körningen till certifikatet.",
   "新しいバージョンがあります": "En ny version är tillgänglig",
   "ダウンロード": "Ladda ner",
   "後で": "Senare",
@@ -14614,6 +14932,20 @@ var I18N = {
 
  },
  "da": {
+  "実測レポート（Blender 実行結果）": "Målt rapport (Blender-kørsel)",
+  "実測レポートを取り込む (.json)": "Importér en målt rapport (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Når den genererede Blender-Python kører, skriver den scenedract_report.json ved siden af scriptet. Importér filen her, så opgraderes certifikatet fra ”kun forudsigelse” til ”forudsigelse + målt”, og forskelle vises her.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Ingen målt rapport importeret endnu — certifikatet er kun forudsigelse.",
+  "実測レポートを取り込みました。": "Målt rapport importeret.",
+  "実測レポートとして読み込めませんでした。": "Filen kunne ikke læses som en målt rapport: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Denne rapport tilhører en anden scene (IR-hashen matcher ikke) — vises kun som reference; den vedhæftes ikke det aktuelle certifikat.",
+  "実行前チェックポイント: ": "Kontrolpunkt før kørsel: ",
+  "関係の再評価（実測）: ": "Relationer revurderet (målt): ",
+  " 件は実測不可": " ikke målbare",
+  "予測との差異:": "Forskelle fra forudsigelsen:",
+  "予測との差異はありません。": "Ingen forskelle fra forudsigelsen.",
+  "予測のみ — 実測レポート未取り込み": "Kun forudsigelse — ingen målt rapport importeret",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Ved kørsel kontrollerer scriptet sit miljø, gemmer en kontrolpunktskopi af .blend-filen, før det ændrer noget, og skriver til sidst en målt rapport (scenedract_report.json) ved siden af scriptet — importér den under fanen Validering for at vedhæfte den faktiske kørsel til certifikatet.",
   "新しいバージョンがあります": "En ny version er tilgængelig",
   "ダウンロード": "Download",
   "後で": "Senere",
@@ -15177,6 +15509,20 @@ var I18N = {
 
  },
  "nb": {
+  "実測レポート（Blender 実行結果）": "Målt rapport (Blender-kjøring)",
+  "実測レポートを取り込む (.json)": "Importer en målt rapport (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Når den genererte Blender-Python-koden kjøres, skriver den scenedract_report.json ved siden av skriptet. Importer filen her, så oppgraderes sertifikatet fra «kun prediksjon» til «prediksjon + målt», og forskjellene vises her.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Ingen målt rapport importert ennå — sertifikatet er kun prediksjon.",
+  "実測レポートを取り込みました。": "Målt rapport importert.",
+  "実測レポートとして読み込めませんでした。": "Filen kunne ikke leses som en målt rapport: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Denne rapporten tilhører en annen scene (IR-hashen stemmer ikke) — vises kun som referanse; den legges ikke ved det gjeldende sertifikatet.",
+  "実行前チェックポイント: ": "Kontrollpunkt før kjøring: ",
+  "関係の再評価（実測）: ": "Relasjoner revurdert (målt): ",
+  " 件は実測不可": " ikke målbare",
+  "予測との差異:": "Forskjeller fra prediksjonen:",
+  "予測との差異はありません。": "Ingen forskjeller fra prediksjonen.",
+  "予測のみ — 実測レポート未取り込み": "Kun prediksjon — ingen målt rapport importert",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Når skriptet kjøres, kontrollerer det miljøet sitt, lagrer en kontrollpunktskopi av .blend-filen før det endrer noe, og skriver til slutt en målt rapport (scenedract_report.json) ved siden av skriptet — importer den i fanen Validering for å legge den faktiske kjøringen ved sertifikatet.",
   "新しいバージョンがあります": "En ny versjon er tilgjengelig",
   "ダウンロード": "Last ned",
   "後で": "Senere",
@@ -15740,6 +16086,20 @@ var I18N = {
 
  },
  "fi": {
+  "実測レポート（Blender 実行結果）": "Mitattu raportti (Blender-ajo)",
+  "実測レポートを取り込む (.json)": "Tuo mitattu raportti (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Kun luotu Blender-Python ajetaan, se kirjoittaa scenedract_report.json-tiedoston skriptin viereen. Tuo tiedosto tänne, niin varmenne päivittyy ”vain ennusteesta” muotoon ”ennuste + mitattu”, ja erot näkyvät täällä.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Mitattua raporttia ei ole vielä tuotu — varmenne on vain ennuste.",
+  "実測レポートを取り込みました。": "Mitattu raportti tuotu.",
+  "実測レポートとして読み込めませんでした。": "Tiedostoa ei voitu lukea mitattuna raporttina: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Tämä raportti kuuluu toiseen kohtaukseen (IR-tiiviste ei täsmää) — näytetään vain viitteenä; sitä ei liitetä nykyiseen varmenteeseen.",
+  "実行前チェックポイント: ": "Tarkistuspiste ennen ajoa: ",
+  "関係の再評価（実測）: ": "Suhteet arvioitu uudelleen (mitattu): ",
+  " 件は実測不可": " ei mitattavissa",
+  "予測との差異:": "Erot ennusteeseen:",
+  "予測との差異はありません。": "Ei eroja ennusteeseen.",
+  "予測のみ — 実測レポート未取り込み": "Vain ennuste — mitattua raporttia ei tuotu",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Ajettaessa skripti tarkistaa ympäristönsä, tallentaa .blend-tiedostosta tarkistuspistekopion ennen mitään muutoksia ja kirjoittaa lopuksi mitatun raportin (scenedract_report.json) skriptin viereen — tuo se Vahvistus-välilehdellä liittääksesi todellisen ajon varmenteeseen.",
   "新しいバージョンがあります": "Uusi versio on saatavilla",
   "ダウンロード": "Lataa",
   "後で": "Myöhemmin",
@@ -16303,6 +16663,20 @@ var I18N = {
 
  },
  "et": {
+  "実測レポート（Blender 実行結果）": "Mõõdetud aruanne (Blenderi käivitus)",
+  "実測レポートを取り込む (.json)": "Impordi mõõdetud aruanne (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Kui genereeritud Blender Python käivitub, kirjutab see skripti kõrvale faili scenedract_report.json. Importige see fail siia ja sertifikaat uueneb tasemelt „ainult ennustus\" tasemele „ennustus + mõõdetud\" ning erinevused kuvatakse siin.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Mõõdetud aruannet pole veel imporditud — sertifikaat on ainult ennustus.",
+  "実測レポートを取り込みました。": "Mõõdetud aruanne imporditud.",
+  "実測レポートとして読み込めませんでした。": "Faili ei saanud mõõdetud aruandena lugeda: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "See aruanne kuulub teisele stseenile (IR räsi ei ühti) — kuvatakse ainult viitena; praegusele sertifikaadile seda ei lisata.",
+  "実行前チェックポイント: ": "Kontrollpunkt enne käivitust: ",
+  "関係の再評価（実測）: ": "Suhted ümber hinnatud (mõõdetud): ",
+  " 件は実測不可": " ei ole mõõdetavad",
+  "予測との差異:": "Erinevused ennustusest:",
+  "予測との差異はありません。": "Ennustusest erinevusi pole.",
+  "予測のみ — 実測レポート未取り込み": "Ainult ennustus — mõõdetud aruannet pole imporditud",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Käivitamisel kontrollib skript oma keskkonda, salvestab enne muudatusi .blend-failist kontrollpunkti koopia ja kirjutab lõpus skripti kõrvale mõõdetud aruande (scenedract_report.json) — importige see vahekaardil Kinnitamine, et lisada tegelik käivitus sertifikaadile.",
   "新しいバージョンがあります": "Saadaval on uus versioon",
   "ダウンロード": "Laadi alla",
   "後で": "Hiljem",
@@ -16866,6 +17240,20 @@ var I18N = {
 
  },
  "lv": {
+  "実測レポート（Blender 実行結果）": "Izmērītais ziņojums (Blender izpilde)",
+  "実測レポートを取り込む (.json)": "Importēt izmērīto ziņojumu (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Kad ģenerētais Blender Python tiek izpildīts, tas blakus skriptam ieraksta scenedract_report.json. Importējiet šo failu šeit, un sertifikāts tiks jaunināts no „tikai prognoze\" uz „prognoze + izmērīts\", un atšķirības tiks parādītas šeit.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Izmērītais ziņojums vēl nav importēts — sertifikāts ir tikai prognoze.",
+  "実測レポートを取り込みました。": "Izmērītais ziņojums importēts.",
+  "実測レポートとして読み込めませんでした。": "Failu nevarēja nolasīt kā izmērīto ziņojumu: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Šis ziņojums pieder citai ainai (IR jaucējvērtība neatbilst) — tiek rādīts tikai kā atsauce; pašreizējam sertifikātam tas netiek pievienots.",
+  "実行前チェックポイント: ": "Kontrolpunkts pirms izpildes: ",
+  "関係の再評価（実測）: ": "Attiecības pārvērtētas (izmērīts): ",
+  " 件は実測不可": " nav izmērāmas",
+  "予測との差異:": "Atšķirības no prognozes:",
+  "予測との差異はありません。": "Nav atšķirību no prognozes.",
+  "予測のみ — 実測レポート未取り込み": "Tikai prognoze — izmērītais ziņojums nav importēts",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Izpildes laikā skripts pārbauda savu vidi, pirms jebkādām izmaiņām saglabā .blend kontrolpunkta kopiju un beigās blakus skriptam ieraksta izmērīto ziņojumu (scenedract_report.json) — importējiet to cilnē Validācija, lai sertifikātam pievienotu faktisko izpildi.",
   "新しいバージョンがあります": "Ir pieejama jauna versija",
   "ダウンロード": "Lejupielādēt",
   "後で": "Vēlāk",
@@ -17429,6 +17817,20 @@ var I18N = {
 
  },
  "lt": {
+  "実測レポート（Blender 実行結果）": "Išmatuota ataskaita (Blender paleidimas)",
+  "実測レポートを取り込む (.json)": "Importuoti išmatuotą ataskaitą (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Paleidus sugeneruotą Blender Python, šalia scenarijaus įrašomas scenedract_report.json. Importuokite tą failą čia ir pažymėjimas bus atnaujintas iš „tik prognozė\" į „prognozė + išmatuota\", o skirtumai bus rodomi čia.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Išmatuota ataskaita dar neimportuota — pažymėjimas yra tik prognozė.",
+  "実測レポートを取り込みました。": "Išmatuota ataskaita importuota.",
+  "実測レポートとして読み込めませんでした。": "Failo nepavyko nuskaityti kaip išmatuotos ataskaitos: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Ši ataskaita priklauso kitai scenai (IR maiša nesutampa) — rodoma tik kaip nuoroda; prie dabartinio pažymėjimo ji nepridedama.",
+  "実行前チェックポイント: ": "Kontrolinis taškas prieš paleidimą: ",
+  "関係の再評価（実測）: ": "Santykiai įvertinti iš naujo (išmatuota): ",
+  " 件は実測不可": " neišmatuojamų",
+  "予測との差異:": "Skirtumai nuo prognozės:",
+  "予測との差異はありません。": "Skirtumų nuo prognozės nėra.",
+  "予測のみ — 実測レポート未取り込み": "Tik prognozė — išmatuota ataskaita neimportuota",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Paleidimo metu scenarijus patikrina savo aplinką, prieš ką nors keisdamas išsaugo .blend kontrolinio taško kopiją ir pabaigoje šalia scenarijaus įrašo išmatuotą ataskaitą (scenedract_report.json) — importuokite ją skirtuke Tikrinimas, kad prie pažymėjimo pridėtumėte faktinį paleidimą.",
   "新しいバージョンがあります": "Yra nauja versija",
   "ダウンロード": "Atsisiųsti",
   "後で": "Vėliau",
@@ -17992,6 +18394,20 @@ var I18N = {
 
  },
  "sl": {
+  "実測レポート（Blender 実行結果）": "Izmerjeno poročilo (zagon v Blenderju)",
+  "実測レポートを取り込む (.json)": "Uvozi izmerjeno poročilo (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Ko se ustvarjeni Blender Python zažene, poleg skripte zapiše scenedract_report.json. Uvozite to datoteko tukaj in certifikat se nadgradi z »samo napoved« na »napoved + izmerjeno«, razlike pa se prikažejo tukaj.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Izmerjeno poročilo še ni uvoženo — certifikat je samo napoved.",
+  "実測レポートを取り込みました。": "Izmerjeno poročilo uvoženo.",
+  "実測レポートとして読み込めませんでした。": "Datoteke ni bilo mogoče prebrati kot izmerjeno poročilo: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "To poročilo pripada drugi sceni (zgoščena vrednost IR se ne ujema) — prikazano je samo kot referenca; trenutnemu certifikatu se ne priloži.",
+  "実行前チェックポイント: ": "Kontrolna točka pred zagonom: ",
+  "関係の再評価（実測）: ": "Odnosi znova ocenjeni (izmerjeno): ",
+  " 件は実測不可": " ni merljivih",
+  "予測との差異:": "Razlike od napovedi:",
+  "予測との差異はありません。": "Ni razlik od napovedi.",
+  "予測のみ — 実測レポート未取り込み": "Samo napoved — izmerjeno poročilo ni uvoženo",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Ob zagonu skripta preveri svoje okolje, pred kakršno koli spremembo shrani kontrolno kopijo datoteke .blend in na koncu poleg skripte zapiše izmerjeno poročilo (scenedract_report.json) — uvozite ga na zavihku Preverjanje, da certifikatu priložite dejanski zagon.",
   "新しいバージョンがあります": "Na voljo je nova različica",
   "ダウンロード": "Prenesi",
   "後で": "Pozneje",
@@ -18555,6 +18971,20 @@ var I18N = {
 
  },
  "ar": {
+  "実測レポート（Blender 実行結果）": "تقرير مقاس (تشغيل Blender)",
+  "実測レポートを取り込む (.json)": "استيراد تقرير مقاس (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "عند تشغيل كود Blender Python المُولَّد، يكتب scenedract_report.json بجانب البرنامج النصي. استورد ذلك الملف هنا وستتم ترقية الشهادة من «توقع فقط» إلى «توقع + مقاس»، مع عرض أي اختلافات هنا.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "لم يتم استيراد أي تقرير مقاس بعد — الشهادة توقع فقط.",
+  "実測レポートを取り込みました。": "تم استيراد التقرير المقاس.",
+  "実測レポートとして読み込めませんでした。": "تعذرت قراءة ذلك الملف كتقرير مقاس: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "ينتمي هذا التقرير إلى مشهد آخر (بصمة IR غير متطابقة) — يُعرض للمرجع فقط؛ ولا يُرفق بالشهادة الحالية.",
+  "実行前チェックポイント: ": "نقطة حفظ قبل التشغيل: ",
+  "関係の再評価（実測）: ": "العلاقات مُعاد تقييمها (مقاس): ",
+  " 件は実測不可": " غير قابلة للقياس",
+  "予測との差異:": "الاختلافات عن التوقع:",
+  "予測との差異はありません。": "لا اختلافات عن التوقع.",
+  "予測のみ — 実測レポート未取り込み": "توقع فقط — لم يتم استيراد تقرير مقاس",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "عند التشغيل، يتحقق البرنامج النصي من بيئته، ويحفظ نسخة نقطة حفظ من ملف .blend قبل تغيير أي شيء، وفي النهاية يكتب تقريرًا مقاسًا (scenedract_report.json) بجانب البرنامج النصي — استورده في علامة تبويب التحقق لإرفاق التشغيل الفعلي بالشهادة.",
   "新しいバージョンがあります": "يتوفر إصدار جديد",
   "ダウンロード": "تنزيل",
   "後で": "لاحقًا",
@@ -19118,6 +19548,20 @@ var I18N = {
 
  },
  "fa": {
+  "実測レポート（Blender 実行結果）": "گزارش اندازه‌گیری‌شده (اجرای Blender)",
+  "実測レポートを取り込む (.json)": "وارد کردن گزارش اندازه‌گیری‌شده (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "وقتی Python تولیدشدهٔ Blender اجرا می‌شود، فایل scenedract_report.json را کنار اسکریپت می‌نویسد. آن فایل را اینجا وارد کنید تا گواهی از «فقط پیش‌بینی» به «پیش‌بینی + اندازه‌گیری‌شده» ارتقا یابد و تفاوت‌ها اینجا نمایش داده شوند.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "هنوز گزارش اندازه‌گیری‌شده‌ای وارد نشده است — گواهی فقط پیش‌بینی است.",
+  "実測レポートを取り込みました。": "گزارش اندازه‌گیری‌شده وارد شد.",
+  "実測レポートとして読み込めませんでした。": "آن فایل به‌عنوان گزارش اندازه‌گیری‌شده خوانده نشد: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "این گزارش متعلق به صحنهٔ دیگری است (هش IR مطابقت ندارد) — فقط برای مرجع نمایش داده می‌شود؛ به گواهی فعلی پیوست نمی‌شود.",
+  "実行前チェックポイント: ": "نقطهٔ بازبینی پیش از اجرا: ",
+  "関係の再評価（実測）: ": "روابط بازبینی‌شده (اندازه‌گیری): ",
+  " 件は実測不可": " قابل اندازه‌گیری نیست",
+  "予測との差異:": "تفاوت‌ها با پیش‌بینی:",
+  "予測との差異はありません。": "تفاوتی با پیش‌بینی ندارد.",
+  "予測のみ — 実測レポート未取り込み": "فقط پیش‌بینی — گزارش اندازه‌گیری‌شده وارد نشده است",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "هنگام اجرا، اسکریپت محیط خود را بررسی می‌کند، پیش از هر تغییری یک نسخهٔ نقطهٔ بازبینی از فایل .blend ذخیره می‌کند و در پایان گزارش اندازه‌گیری‌شده (scenedract_report.json) را کنار اسکریپت می‌نویسد — آن را در زبانهٔ اعتبارسنجی وارد کنید تا اجرای واقعی به گواهی پیوست شود.",
   "新しいバージョンがあります": "نسخه جدیدی در دسترس است",
   "ダウンロード": "دانلود",
   "後で": "بعداً",
@@ -19681,6 +20125,20 @@ var I18N = {
 
  },
  "ur": {
+  "実測レポート（Blender 実行結果）": "پیمائش شدہ رپورٹ (Blender رن)",
+  "実測レポートを取り込む (.json)": "پیمائش شدہ رپورٹ درآمد کریں (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "جب تیار شدہ Blender Python چلتا ہے تو یہ اسکرپٹ کے ساتھ scenedract_report.json لکھتا ہے۔ اس فائل کو یہاں درآمد کریں اور سرٹیفکیٹ «صرف پیش گوئی» سے «پیش گوئی + پیمائش شدہ» میں اپ گریڈ ہو جائے گا، اور اختلافات یہاں دکھائے جائیں گے۔",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "ابھی تک کوئی پیمائش شدہ رپورٹ درآمد نہیں ہوئی — سرٹیفکیٹ صرف پیش گوئی ہے۔",
+  "実測レポートを取り込みました。": "پیمائش شدہ رپورٹ درآمد ہو گئی۔",
+  "実測レポートとして読み込めませんでした。": "اس فائل کو پیمائش شدہ رپورٹ کے طور پر نہیں پڑھا جا سکا: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "یہ رپورٹ کسی دوسرے منظر کی ہے (IR ہیش مماثل نہیں) — صرف حوالے کے لیے دکھائی گئی ہے؛ موجودہ سرٹیفکیٹ سے منسلک نہیں ہوتی۔",
+  "実行前チェックポイント: ": "رن سے پہلے چیک پوائنٹ: ",
+  "関係の再評価（実測）: ": "تعلقات کی دوبارہ جانچ (پیمائش شدہ): ",
+  " 件は実測不可": " قابلِ پیمائش نہیں",
+  "予測との差異:": "پیش گوئی سے اختلافات:",
+  "予測との差異はありません。": "پیش گوئی سے کوئی اختلاف نہیں۔",
+  "予測のみ — 実測レポート未取り込み": "صرف پیش گوئی — پیمائش شدہ رپورٹ درآمد نہیں ہوئی",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "چلتے وقت اسکرپٹ اپنے ماحول کی تصدیق کرتا ہے، کچھ بھی بدلنے سے پہلے .blend کی چیک پوائنٹ کاپی محفوظ کرتا ہے، اور آخر میں اسکرپٹ کے ساتھ پیمائش شدہ رپورٹ (scenedract_report.json) لکھتا ہے — اصل رن کو سرٹیفکیٹ سے منسلک کرنے کے لیے اسے توثیق والے ٹیب میں درآمد کریں۔",
   "新しいバージョンがあります": "ایک نیا ورژن دستیاب ہے",
   "ダウンロード": "ڈاؤن لوڈ",
   "後で": "بعد میں",
@@ -20244,6 +20702,20 @@ var I18N = {
 
  },
  "he": {
+  "実測レポート（Blender 実行結果）": "דוח מדוד (הרצת Blender)",
+  "実測レポートを取り込む (.json)": "ייבוא דוח מדוד (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "כאשר קוד ה-Blender Python שנוצר רץ, הוא כותב את scenedract_report.json לצד הסקריפט. ייבאו את הקובץ כאן והתעודה תשודרג מ\"תחזית בלבד\" ל\"תחזית + מדוד\", וכל ההבדלים יוצגו כאן.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "עדיין לא יובא דוח מדוד — התעודה היא תחזית בלבד.",
+  "実測レポートを取り込みました。": "הדוח המדוד יובא.",
+  "実測レポートとして読み込めませんでした。": "לא ניתן היה לקרוא את הקובץ כדוח מדוד: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "דוח זה שייך לסצנה אחרת (גיבוב ה-IR אינו תואם) — מוצג לעיון בלבד; הוא אינו מצורף לתעודה הנוכחית.",
+  "実行前チェックポイント: ": "נקודת ביקורת לפני הרצה: ",
+  "関係の再評価（実測）: ": "יחסים שהוערכו מחדש (מדוד): ",
+  " 件は実測不可": " לא ניתנים למדידה",
+  "予測との差異:": "הבדלים מהתחזית:",
+  "予測との差異はありません。": "אין הבדלים מהתחזית.",
+  "予測のみ — 実測レポート未取り込み": "תחזית בלבד — לא יובא דוח מדוד",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "בעת ההרצה הסקריפט מאמת את סביבתו, שומר עותק נקודת ביקורת של ה-.blend לפני שהוא משנה דבר, ובסוף כותב דוח מדוד (scenedract_report.json) לצד הסקריפט — ייבאו אותו בלשונית האימות כדי לצרף את ההרצה בפועל לתעודה.",
   "新しいバージョンがあります": "גרסה חדשה זמינה",
   "ダウンロード": "הורדה",
   "後で": "מאוחר יותר",
@@ -20807,6 +21279,20 @@ var I18N = {
 
  },
  "hi": {
+  "実測レポート（Blender 実行結果）": "मापी गई रिपोर्ट (Blender रन)",
+  "実測レポートを取り込む (.json)": "मापी गई रिपोर्ट आयात करें (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "जब जनरेट किया गया Blender Python चलता है, तो वह स्क्रिप्ट के पास scenedract_report.json लिखता है। उस फ़ाइल को यहाँ आयात करें और प्रमाणपत्र \"केवल भविष्यवाणी\" से \"भविष्यवाणी + मापा गया\" में अपग्रेड हो जाएगा, और अंतर यहाँ दिखेंगे।",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "अभी तक कोई मापी गई रिपोर्ट आयात नहीं हुई — प्रमाणपत्र केवल भविष्यवाणी है।",
+  "実測レポートを取り込みました。": "मापी गई रिपोर्ट आयात हो गई।",
+  "実測レポートとして読み込めませんでした。": "उस फ़ाइल को मापी गई रिपोर्ट के रूप में नहीं पढ़ा जा सका: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "यह रिपोर्ट किसी अन्य दृश्य की है (IR हैश मेल नहीं खाता) — केवल संदर्भ के लिए दिखाई गई है; यह वर्तमान प्रमाणपत्र से संलग्न नहीं होती।",
+  "実行前チェックポイント: ": "रन-पूर्व चेकपॉइंट: ",
+  "関係の再評価（実測）: ": "संबंध पुनर्मूल्यांकित (मापा गया): ",
+  " 件は実測不可": " मापने योग्य नहीं",
+  "予測との差異:": "भविष्यवाणी से अंतर:",
+  "予測との差異はありません。": "भविष्यवाणी से कोई अंतर नहीं।",
+  "予測のみ — 実測レポート未取り込み": "केवल भविष्यवाणी — मापी गई रिपोर्ट आयात नहीं हुई",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "चलने पर स्क्रिप्ट अपने परिवेश की जाँच करता है, कुछ भी बदलने से पहले .blend की चेकपॉइंट प्रति सहेजता है, और अंत में स्क्रिप्ट के पास मापी गई रिपोर्ट (scenedract_report.json) लिखता है — वास्तविक रन को प्रमाणपत्र से जोड़ने के लिए इसे सत्यापन टैब में आयात करें।",
   "新しいバージョンがあります": "नया संस्करण उपलब्ध है",
   "ダウンロード": "डाउनलोड",
   "後で": "बाद में",
@@ -21370,6 +21856,20 @@ var I18N = {
 
  },
  "bn": {
+  "実測レポート（Blender 実行結果）": "পরিমাপ করা প্রতিবেদন (Blender রান)",
+  "実測レポートを取り込む (.json)": "পরিমাপ করা প্রতিবেদন আমদানি করুন (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "তৈরি করা Blender Python চললে, এটি স্ক্রিপ্টের পাশে scenedract_report.json লেখে। সেই ফাইলটি এখানে আমদানি করুন এবং শংসাপত্রটি \"শুধু পূর্বাভাস\" থেকে \"পূর্বাভাস + পরিমাপ করা\"-তে আপগ্রেড হবে, এবং পার্থক্যগুলি এখানে দেখানো হবে।",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "এখনও কোনো পরিমাপ করা প্রতিবেদন আমদানি হয়নি — শংসাপত্রটি শুধু পূর্বাভাস।",
+  "実測レポートを取り込みました。": "পরিমাপ করা প্রতিবেদন আমদানি হয়েছে।",
+  "実測レポートとして読み込めませんでした。": "সেই ফাইলটিকে পরিমাপ করা প্রতিবেদন হিসেবে পড়া যায়নি: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "এই প্রতিবেদনটি অন্য একটি দৃশ্যের (IR হ্যাশ মিলছে না) — শুধু প্রসঙ্গ হিসেবে দেখানো হয়েছে; এটি বর্তমান শংসাপত্রের সঙ্গে সংযুক্ত হয় না।",
+  "実行前チェックポイント: ": "রানের আগে চেকপয়েন্ট: ",
+  "関係の再評価（実測）: ": "সম্পর্ক পুনর্মূল্যায়ন (পরিমাপ করা): ",
+  " 件は実測不可": " পরিমাপযোগ্য নয়",
+  "予測との差異:": "পূর্বাভাস থেকে পার্থক্য:",
+  "予測との差異はありません。": "পূর্বাভাস থেকে কোনো পার্থক্য নেই।",
+  "予測のみ — 実測レポート未取り込み": "শুধু পূর্বাভাস — পরিমাপ করা প্রতিবেদন আমদানি হয়নি",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "চলার সময় স্ক্রিপ্টটি তার পরিবেশ যাচাই করে, কিছু পরিবর্তন করার আগে .blend-এর একটি চেকপয়েন্ট অনুলিপি সংরক্ষণ করে, এবং শেষে স্ক্রিপ্টের পাশে একটি পরিমাপ করা প্রতিবেদন (scenedract_report.json) লেখে — আসল রানটি শংসাপত্রের সঙ্গে সংযুক্ত করতে এটি যাচাইকরণ ট্যাবে আমদানি করুন।",
   "新しいバージョンがあります": "নতুন সংস্করণ উপলব্ধ আছে",
   "ダウンロード": "ডাউনলোড",
   "後で": "পরে",
@@ -21933,6 +22433,20 @@ var I18N = {
 
  },
  "th": {
+  "実測レポート（Blender 実行結果）": "รายงานที่วัดจริง (การรัน Blender)",
+  "実測レポートを取り込む (.json)": "นำเข้ารายงานที่วัดจริง (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "เมื่อ Python ของ Blender ที่สร้างขึ้นทำงาน มันจะเขียน scenedract_report.json ไว้ข้างสคริปต์ นำเข้าไฟล์นั้นที่นี่ แล้วใบรับรองจะอัปเกรดจาก \"คาดการณ์เท่านั้น\" เป็น \"คาดการณ์ + วัดจริง\" และความแตกต่างจะแสดงที่นี่",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "ยังไม่มีการนำเข้ารายงานที่วัดจริง — ใบรับรองเป็นเพียงการคาดการณ์",
+  "実測レポートを取り込みました。": "นำเข้ารายงานที่วัดจริงแล้ว",
+  "実測レポートとして読み込めませんでした。": "ไม่สามารถอ่านไฟล์นั้นเป็นรายงานที่วัดจริงได้: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "รายงานนี้เป็นของฉากอื่น (แฮช IR ไม่ตรงกัน) — แสดงเพื่ออ้างอิงเท่านั้น; ไม่ได้แนบกับใบรับรองปัจจุบัน",
+  "実行前チェックポイント: ": "จุดตรวจสอบก่อนรัน: ",
+  "関係の再評価（実測）: ": "ความสัมพันธ์ที่ประเมินใหม่ (วัดจริง): ",
+  " 件は実測不可": " วัดไม่ได้",
+  "予測との差異:": "ความแตกต่างจากการคาดการณ์:",
+  "予測との差異はありません。": "ไม่มีความแตกต่างจากการคาดการณ์",
+  "予測のみ — 実測レポート未取り込み": "คาดการณ์เท่านั้น — ยังไม่ได้นำเข้ารายงานที่วัดจริง",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "ขณะทำงาน สคริปต์จะตรวจสอบสภาพแวดล้อมของตัวเอง บันทึกสำเนาจุดตรวจสอบของ .blend ก่อนเปลี่ยนแปลงใด ๆ และในตอนท้ายจะเขียนรายงานที่วัดจริง (scenedract_report.json) ไว้ข้างสคริปต์ — นำเข้าในแท็บการตรวจสอบเพื่อแนบการรันจริงเข้ากับใบรับรอง",
   "新しいバージョンがあります": "มีเวอร์ชันใหม่ให้ใช้งาน",
   "ダウンロード": "ดาวน์โหลด",
   "後で": "ภายหลัง",
@@ -22496,6 +23010,20 @@ var I18N = {
 
  },
  "vi": {
+  "実測レポート（Blender 実行結果）": "Báo cáo đã đo (lần chạy Blender)",
+  "実測レポートを取り込む (.json)": "Nhập báo cáo đã đo (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Khi Python Blender đã tạo chạy, nó ghi scenedract_report.json bên cạnh script. Nhập tệp đó tại đây và chứng chỉ sẽ nâng cấp từ \"chỉ dự đoán\" thành \"dự đoán + đã đo\", mọi khác biệt sẽ hiển thị tại đây.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Chưa nhập báo cáo đã đo nào — chứng chỉ chỉ là dự đoán.",
+  "実測レポートを取り込みました。": "Đã nhập báo cáo đã đo.",
+  "実測レポートとして読み込めませんでした。": "Không thể đọc tệp đó dưới dạng báo cáo đã đo: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Báo cáo này thuộc về một cảnh khác (băm IR không khớp) — chỉ hiển thị để tham khảo; không đính kèm vào chứng chỉ hiện tại.",
+  "実行前チェックポイント: ": "Điểm kiểm tra trước khi chạy: ",
+  "関係の再評価（実測）: ": "Quan hệ được đánh giá lại (đã đo): ",
+  " 件は実測不可": " không đo được",
+  "予測との差異:": "Khác biệt so với dự đoán:",
+  "予測との差異はありません。": "Không có khác biệt so với dự đoán.",
+  "予測のみ — 実測レポート未取り込み": "Chỉ dự đoán — chưa nhập báo cáo đã đo",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Khi chạy, script kiểm tra môi trường của nó, lưu một bản sao điểm kiểm tra của .blend trước khi thay đổi bất cứ thứ gì, và cuối cùng ghi một báo cáo đã đo (scenedract_report.json) bên cạnh script — hãy nhập nó trong tab Xác thực để đính kèm lần chạy thực tế vào chứng chỉ.",
   "新しいバージョンがあります": "Đã có phiên bản mới",
   "ダウンロード": "Tải xuống",
   "後で": "Để sau",
@@ -23059,6 +23587,20 @@ var I18N = {
 
  },
  "id": {
+  "実測レポート（Blender 実行結果）": "Laporan terukur (run Blender)",
+  "実測レポートを取り込む (.json)": "Impor laporan terukur (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Saat Python Blender yang dihasilkan berjalan, ia menulis scenedract_report.json di samping skrip. Impor berkas itu di sini dan sertifikat akan ditingkatkan dari \"hanya prediksi\" menjadi \"prediksi + terukur\", dengan perbedaan apa pun ditampilkan di sini.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Belum ada laporan terukur yang diimpor — sertifikat hanya prediksi.",
+  "実測レポートを取り込みました。": "Laporan terukur diimpor.",
+  "実測レポートとして読み込めませんでした。": "Berkas itu tidak dapat dibaca sebagai laporan terukur: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Laporan ini milik adegan lain (hash IR tidak cocok) — ditampilkan hanya sebagai referensi; tidak dilampirkan ke sertifikat saat ini.",
+  "実行前チェックポイント: ": "Checkpoint sebelum run: ",
+  "関係の再評価（実測）: ": "Relasi dievaluasi ulang (terukur): ",
+  " 件は実測不可": " tidak dapat diukur",
+  "予測との差異:": "Perbedaan dari prediksi:",
+  "予測との差異はありません。": "Tidak ada perbedaan dari prediksi.",
+  "予測のみ — 実測レポート未取り込み": "Hanya prediksi — laporan terukur belum diimpor",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Saat berjalan, skrip memverifikasi lingkungannya, menyimpan salinan checkpoint .blend sebelum mengubah apa pun, dan di akhir menulis laporan terukur (scenedract_report.json) di samping skrip — impor di tab Validasi untuk melampirkan run sebenarnya ke sertifikat.",
   "新しいバージョンがあります": "Versi baru tersedia",
   "ダウンロード": "Unduh",
   "後で": "Nanti",
@@ -23622,6 +24164,20 @@ var I18N = {
 
  },
  "ms": {
+  "実測レポート（Blender 実行結果）": "Laporan terukur (larian Blender)",
+  "実測レポートを取り込む (.json)": "Import laporan terukur (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Apabila Python Blender yang dijana berjalan, ia menulis scenedract_report.json di sebelah skrip. Import fail itu di sini dan sijil akan dinaik taraf daripada \"ramalan sahaja\" kepada \"ramalan + terukur\", dengan sebarang perbezaan dipaparkan di sini.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Belum ada laporan terukur diimport — sijil hanya ramalan.",
+  "実測レポートを取り込みました。": "Laporan terukur diimport.",
+  "実測レポートとして読み込めませんでした。": "Fail itu tidak dapat dibaca sebagai laporan terukur: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Laporan ini milik adegan lain (cincangan IR tidak sepadan) — dipaparkan untuk rujukan sahaja; tidak dilampirkan pada sijil semasa.",
+  "実行前チェックポイント: ": "Titik semak sebelum larian: ",
+  "関係の再評価（実測）: ": "Hubungan dinilai semula (terukur): ",
+  " 件は実測不可": " tidak boleh diukur",
+  "予測との差異:": "Perbezaan daripada ramalan:",
+  "予測との差異はありません。": "Tiada perbezaan daripada ramalan.",
+  "予測のみ — 実測レポート未取り込み": "Ramalan sahaja — laporan terukur belum diimport",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Apabila berjalan, skrip mengesahkan persekitarannya, menyimpan salinan titik semak .blend sebelum mengubah apa-apa, dan pada akhirnya menulis laporan terukur (scenedract_report.json) di sebelah skrip — importnya dalam tab Pengesahan untuk melampirkan larian sebenar pada sijil.",
   "新しいバージョンがあります": "Versi baharu tersedia",
   "ダウンロード": "Muat turun",
   "後で": "Kemudian",
@@ -24185,6 +24741,20 @@ var I18N = {
 
  },
  "fil": {
+  "実測レポート（Blender 実行結果）": "Nasukat na ulat (Blender run)",
+  "実測レポートを取り込む (.json)": "Mag-import ng nasukat na ulat (.json)",
+  "生成した Blender Python を実行すると、スクリプトと同じ場所に scenedract_report.json が書き出されます。そのファイルを取り込むと、証明書が「予測のみ」から「予測＋実績」に更新され、予測と実績の差異がここに表示されます。": "Kapag tumakbo ang nabuong Blender Python, isinusulat nito ang scenedract_report.json sa tabi ng script. I-import ang file na iyon dito at mag-a-upgrade ang certificate mula \"hula lamang\" patungong \"hula + nasukat\", at ipakikita rito ang anumang pagkakaiba.",
+  "まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。": "Wala pang na-import na nasukat na ulat — ang certificate ay hula lamang.",
+  "実測レポートを取り込みました。": "Na-import ang nasukat na ulat.",
+  "実測レポートとして読み込めませんでした。": "Hindi mabasa ang file na iyon bilang nasukat na ulat: ",
+  "このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。": "Ang ulat na ito ay para sa ibang eksena (hindi tumutugma ang IR hash) — ipinapakita para sa sanggunian lamang; hindi ito ikinakabit sa kasalukuyang certificate.",
+  "実行前チェックポイント: ": "Checkpoint bago ang run: ",
+  "関係の再評価（実測）: ": "Mga relasyong muling sinuri (nasukat): ",
+  " 件は実測不可": " hindi masukat",
+  "予測との差異:": "Mga pagkakaiba sa hula:",
+  "予測との差異はありません。": "Walang pagkakaiba sa hula.",
+  "予測のみ — 実測レポート未取り込み": "Hula lamang — walang na-import na nasukat na ulat",
+  "実行すると、変更前にチェックポイント（.blend のコピー）を保存し、終了時に実測レポート scenedract_report.json をスクリプトと同じ場所へ出力します。検証タブで取り込むと証明書に実績が付きます。": "Kapag tumatakbo, bineberipika ng script ang environment nito, nagse-save ng checkpoint copy ng .blend bago may baguhin, at sa dulo ay nagsusulat ng nasukat na ulat (scenedract_report.json) sa tabi ng script — i-import ito sa tab na Validation para ikabit ang aktuwal na run sa certificate.",
   "新しいバージョンがあります": "May bagong bersyon na available",
   "ダウンロード": "I-download",
   "後で": "Mamaya na",
@@ -27293,13 +27863,92 @@ function genBpy(ir){
   L.push("#           Unity builder attaches the actual BoxCollider.");
   L.push("#  Run    : blender --background --python build_scene.py");
   L.push("#           (headless/CI) or paste into the Scripting workspace.");
+  L.push("#  Safety : an environment preflight runs first (Blender version");
+  L.push("#           + enum/operator probes; a mismatch stops the run with");
+  L.push("#           a plain-language message), then a checkpoint copy of");
+  L.push("#           the current .blend is saved before anything changes.");
+  L.push("#  Report : at the end, the ACTUALLY built scene is measured and");
+  L.push("#           written to scenedract_report.json next to this script.");
+  L.push("#           Import it in SceneDract (Validation tab) to upgrade");
+  L.push("#           the QA certificate from prediction-only to measured.");
   L.push("# ================================================================");
   L.push("import bpy, bmesh, json, math");
+  L.push("import os, time");
   L.push("from mathutils import Vector");
+  L.push("");
+  var prof = (typeof currentProfile === "function") ? currentProfile() : { target:"Unity", format:"GLB" };
+  var irHashForReport = stableHash(canonicalStringify(ir));
+  var sdExportMod = prof.format.indexOf("USD") === 0 ? "wm" : "export_scene";
+  var sdExportOp = prof.format === "GLB" ? "gltf" : (prof.format.indexOf("USD") === 0 ? "usd_export" : "fbx");
+  L.push("# ---- SceneDract environment preflight ---------------------------");
+  L.push("# Field lesson: enum identifiers are renamed between Blender");
+  L.push("# versions, and a stale one does not raise — it silently does not");
+  L.push("# apply. So this script PROBES the running build before it sets");
+  L.push("# anything: the Blender version, the render-engine enum on THIS");
+  L.push("# build, and the export operator the chosen profile needs. Any");
+  L.push("# mismatch stops the run HERE, with the mismatch spelled out in");
+  L.push("# plain language, before a single object is touched.");
+  L.push("_SD_REQUIRED = (5, 2, 0)");
+  L.push("_SD_ENGINE = 'BLENDER_EEVEE'");
+  L.push("_SD_EXPORT_MOD = '" + sdExportMod + "'");
+  L.push("_SD_EXPORT_OPNAME = '" + sdExportOp + "'");
+  L.push("_SD_EXPORT_LABEL = 'bpy.ops.' + _SD_EXPORT_MOD + '.' + _SD_EXPORT_OPNAME");
+  L.push("_SD_PREFLIGHT = {'requiredBlender': '5.2.0', 'detectedBlender': bpy.app.version_string, 'engine': _SD_ENGINE, 'exportOp': _SD_EXPORT_LABEL, 'ok': True}");
+  L.push("def _sd_preflight():");
+  L.push("    _problems = []");
+  L.push("    if tuple(bpy.app.version[:3]) < _SD_REQUIRED:");
+  L.push("        _problems.append('Blender ' + bpy.app.version_string + ' detected — this script is pinned to Blender 5.2 LTS or newer: enum names and APIs differ across versions, and a wrong enum does not raise, it just does not apply')");
+  L.push("    _render = getattr(bpy.context.scene, 'render', None)");
+  L.push("    _rna = getattr(_render, 'bl_rna', None)");
+  L.push("    _prop = None");
+  L.push("    if _rna is not None:");
+  L.push("        try:");
+  L.push("            _prop = _rna.properties['engine']");
+  L.push("        except Exception:");
+  L.push("            _prop = None");
+  L.push("    if _prop is not None:");
+  L.push("        _ids = [getattr(_it, 'identifier', '') for _it in _prop.enum_items]");
+  L.push("        if _SD_ENGINE not in _ids:");
+  L.push("            _problems.append('render engine enum ' + repr(_SD_ENGINE) + ' is not available in this Blender build (available: ' + ', '.join(_ids) + ') — regenerate in SceneDract or fix the engine name for this version')");
+  L.push("    _opmod = getattr(bpy.ops, _SD_EXPORT_MOD, None)");
+  L.push("    _opobj = getattr(_opmod, _SD_EXPORT_OPNAME, None)");
+  L.push("    _probe = getattr(_opobj, 'get_rna_type', None)");
+  L.push("    if _probe is not None:");
+  L.push("        try:");
+  L.push("            _probe()");
+  L.push("        except Exception:");
+  L.push("            _problems.append('export operator ' + _SD_EXPORT_LABEL + ' is not registered in this Blender build — enable its add-on or choose another export profile in SceneDract')");
+  L.push("    if _problems:");
+  L.push("        raise SystemExit('SCENEDRACT PREFLIGHT FAILED — nothing was built.\\n' + '\\n'.join(' - ' + _p for _p in _problems))");
+  L.push("    print('SCENEDRACT PREFLIGHT: OK (Blender ' + bpy.app.version_string + ', engine ' + _SD_ENGINE + ', export ' + _SD_EXPORT_LABEL + ')')");
+  L.push("_sd_preflight()");
   L.push("");
   L.push("assert bpy.app.version >= (5, 2, 0), f'Blender 5.2 LTS required, got {bpy.app.version_string}'");
   L.push("");
-  var prof = (typeof currentProfile === "function") ? currentProfile() : { target:"Unity", format:"GLB" };
+  L.push("# ---- pre-run checkpoint -------------------------------------------");
+  L.push("# A script run cannot be undone, so BEFORE this script changes");
+  L.push("# anything it saves the current file as a timestamped copy next to");
+  L.push("# itself (copy=True: this session keeps editing the original path,");
+  L.push("# and the original file itself is not overwritten). A scene with");
+  L.push("# no file on disk has nothing to protect — that is recorded in the");
+  L.push("# run report at the end, not silently skipped.");
+  L.push("_SD_CHECKPOINT = {'saved': False, 'path': None, 'reason': 'scene has no file path yet (new or unsaved) — nothing on disk to protect'}");
+  L.push("def _sd_save_checkpoint():");
+  L.push("    _src = getattr(bpy.data, 'filepath', '') or ''");
+  L.push("    if not _src:");
+  L.push("        print('SCENEDRACT CHECKPOINT: skipped — ' + _SD_CHECKPOINT['reason'])");
+  L.push("        return");
+  L.push("    _root, _ext = os.path.splitext(_src)");
+  L.push("    _dst = _root + '.scenedract-checkpoint-' + time.strftime('%Y%m%d-%H%M%S') + (_ext or '.blend')");
+  L.push("    try:");
+  L.push("        bpy.ops.wm.save_as_mainfile(filepath=_dst, copy=True)");
+  L.push("        _SD_CHECKPOINT.update({'saved': True, 'path': _dst, 'reason': None})");
+  L.push("        print('SCENEDRACT CHECKPOINT: pre-run state saved to ' + _dst)");
+  L.push("    except Exception as _exc:");
+  L.push("        _SD_CHECKPOINT.update({'saved': False, 'path': _dst, 'reason': 'checkpoint save failed: ' + str(_exc)})");
+  L.push("        print('SCENEDRACT CHECKPOINT: FAILED (' + str(_exc) + ') — continuing WITHOUT a checkpoint; the current file is untouched')");
+  L.push("_sd_save_checkpoint()");
+  L.push("");
   L.push("# Export profile: " + prof.target + " / " + prof.format + " (selected in SceneDract;");
   L.push("# switch the profile there to regenerate with another destination)");
   L.push("");
@@ -27660,6 +28309,157 @@ function genBpy(ir){
     L.push("# Animation: this IR carries no object animation and no camera motion.");
   }
   exportCallLines(prof).forEach(function(line){ L.push(line); });
+  L.push("");
+  L.push("# ---- measured run report ------------------------------------------");
+  L.push("# Everything above was a PREDICTION made inside SceneDract. This");
+  L.push("# block measures the scene that was ACTUALLY built — object census,");
+  L.push("# base and evaluated triangle counts, real world dimensions, and");
+  L.push("# the IR's declared relations re-evaluated on the measured bounds");
+  L.push("# with the same thresholds as the in-app predictor — and writes it");
+  L.push("# as JSON next to this script. Import scenedract_report.json in");
+  L.push("# SceneDract (Validation tab) and the QA certificate becomes");
+  L.push("# prediction + measured. Report generation can never fail the");
+  L.push("# build: any error is printed, the scene stays.");
+  L.push("SCENEDRACT_IR_HASH = " + JSON.stringify(irHashForReport));
+  L.push("def _sd_report_dir():");
+  L.push("    try:");
+  L.push("        _here = os.path.dirname(os.path.abspath(__file__))");
+  L.push("    except Exception:");
+  L.push("        _here = ''");
+  L.push("    if _here:");
+  L.push("        return _here");
+  L.push("    _fp = getattr(bpy.data, 'filepath', '') or ''");
+  L.push("    if _fp:");
+  L.push("        return os.path.dirname(os.path.abspath(_fp))");
+  L.push("    return os.getcwd()");
+  L.push("def _sd_world_aabb(ob):");
+  L.push("    try:");
+  L.push("        _dg = bpy.context.evaluated_depsgraph_get()");
+  L.push("        _ev = ob.evaluated_get(_dg)");
+  L.push("        _mw = _ev.matrix_world");
+  L.push("        _cs = [_mw @ Vector(c) for c in _ev.bound_box]");
+  L.push("        return ([min(c[i] for c in _cs) for i in range(3)], [max(c[i] for c in _cs) for i in range(3)])");
+  L.push("    except Exception:");
+  L.push("        return None");
+  L.push("def _sd_to_ir_aabb(bb):");
+  L.push("    _mn, _mx = bb");
+  L.push("    return ([_mn[0], _mn[2], -_mx[1]], [_mx[0], _mx[2], -_mn[1]])");
+  L.push("def _sd_measure():");
+  L.push("    _owned = []");
+  L.push("    _by_name = {}");
+  L.push("    def _add(name, ir_id):");
+  L.push("        _ob = bpy.data.objects.get(name)");
+  L.push("        if _ob is None:");
+  L.push("            return");
+  L.push("        _entry = {'name': name, 'irId': ir_id, 'type': getattr(_ob, 'type', None), 'polygons': None, 'triangles': None, 'trianglesEvaluated': None, 'dimensionsM': None, 'aabb': None}");
+  L.push("        _data = getattr(_ob, 'data', None)");
+  L.push("        if getattr(_data, 'polygons', None) is not None:");
+  L.push("            try:");
+  L.push("                _entry['polygons'] = len(_data.polygons)");
+  L.push("                _data.calc_loop_triangles()");
+  L.push("                _entry['triangles'] = len(_data.loop_triangles)");
+  L.push("            except Exception:");
+  L.push("                pass");
+  L.push("        _bb = _sd_world_aabb(_ob)");
+  L.push("        if _bb is not None:");
+  L.push("            _mn, _mx = _sd_to_ir_aabb(_bb)");
+  L.push("            _entry['aabb'] = {'min': _mn, 'max': _mx}");
+  L.push("            _entry['dimensionsM'] = [_mx[i] - _mn[i] for i in range(3)]");
+  L.push("            if _entry['type'] == 'MESH':");
+  L.push("                try:");
+  L.push("                    _dg = bpy.context.evaluated_depsgraph_get()");
+  L.push("                    _tmp = _ob.evaluated_get(_dg).to_mesh()");
+  L.push("                    try:");
+  L.push("                        _tmp.calc_loop_triangles()");
+  L.push("                        _entry['trianglesEvaluated'] = len(_tmp.loop_triangles)");
+  L.push("                    finally:");
+  L.push("                        bpy.data.meshes.remove(_tmp)");
+  L.push("                except Exception:");
+  L.push("                    pass");
+  L.push("        _owned.append(_entry)");
+  L.push("        _by_name[name] = _entry");
+  L.push("    for _o in IR['objects']:");
+  L.push("        if _o['type'] == 'mannequin':");
+  L.push("            _add(_o['name'], _o['id'])");
+  L.push("            for _part in MANNEQUIN_PARTS:");
+  L.push("                _add('MANNEQUIN_' + _o['name'] + '_' + _part['suffix'], _o['id'])");
+  L.push("        else:");
+  L.push("            _add(_o['name'], _o['id'])");
+  L.push("        if _o['type'] == 'light':");
+  L.push("            _add(_o['name'] + '_Light', _o['id'])");
+  L.push("    _add('Sun', None)");
+  L.push("    _add('Camera', None)");
+  L.push("    _anim = {}");
+  L.push("    for _s in globals().get('ANIM_SPECS', []):");
+  L.push("        _anim[_s.get('name')] = _s");
+  L.push("    def _lowest(_e, _name):");
+  L.push("        _mn = _e['aabb']['min'][1]");
+  L.push("        _s = _anim.get(_name)");
+  L.push("        if not _s:");
+  L.push("            return _mn");
+  L.push("        _amp = abs(_s.get('amplitude', 0) or 0)");
+  L.push("        if _s.get('type') == 'float':");
+  L.push("            return _mn - _amp");
+  L.push("        if _s.get('type') == 'pulse':");
+  L.push("            _mx1 = _e['aabb']['max'][1]");
+  L.push("            return (_mx1 + _mn) / 2 - (_mx1 - _mn) * (1 + _amp) / 2");
+  L.push("        return _mn");
+  L.push("    _by_id = {}");
+  L.push("    for _o in IR['objects']:");
+  L.push("        _by_id[_o['id']] = _o");
+  L.push("    _rels = []");
+  L.push("    for _r in (IR.get('relations') or []):");
+  L.push("        if _r.get('type') not in ('on', 'under', 'beside', 'front', 'behind'):");
+  L.push("            continue");
+  L.push("        _ra = _by_id.get(_r.get('a'))");
+  L.push("        _rb = _by_id.get(_r.get('b'))");
+  L.push("        _rec = {'aId': _r.get('a'), 'bId': _r.get('b'), 'a': _ra['name'] if _ra else None, 'b': _rb['name'] if _rb else None, 'type': _r.get('type'), 'satisfied': None}");
+  L.push("        _ea = _by_name.get(_ra['name']) if _ra else None");
+  L.push("        _eb = _by_name.get(_rb['name']) if _rb else None");
+  L.push("        if _ea is not None and _eb is not None and _ea['aabb'] and _eb['aabb']:");
+  L.push("            _A = _ea['aabb']");
+  L.push("            _B = _eb['aabb']");
+  L.push("            _ox = min(_A['max'][0], _B['max'][0]) - max(_A['min'][0], _B['min'][0])");
+  L.push("            _oy = min(_A['max'][1], _B['max'][1]) - max(_A['min'][1], _B['min'][1])");
+  L.push("            _oz = min(_A['max'][2], _B['max'][2]) - max(_A['min'][2], _B['min'][2])");
+  L.push("            _t = _r.get('type')");
+  L.push("            if _t == 'on':");
+  L.push("                _rec['satisfied'] = abs(_lowest(_ea, _ra['name']) - _B['max'][1]) <= 0.06 and _ox > 0 and _oz > 0");
+  L.push("            elif _t == 'under':");
+  L.push("                _rec['satisfied'] = _A['max'][1] <= _B['min'][1] + 0.06 and _ox > 0 and _oz > 0");
+  L.push("            else:");
+  L.push("                _dx = max(_B['min'][0] - _A['max'][0], _A['min'][0] - _B['max'][0], 0)");
+  L.push("                _dz = max(_B['min'][2] - _A['max'][2], _A['min'][2] - _B['max'][2], 0)");
+  L.push("                _ok = ((_dx * _dx + _dz * _dz) ** 0.5) <= 0.9 and _oy > 0");
+  L.push("                if _t == 'front':");
+  L.push("                    _ok = _ok and (_A['min'][2] + _A['max'][2]) > (_B['min'][2] + _B['max'][2])");
+  L.push("                elif _t == 'behind':");
+  L.push("                    _ok = _ok and (_A['min'][2] + _A['max'][2]) < (_B['min'][2] + _B['max'][2])");
+  L.push("                _rec['satisfied'] = _ok");
+  L.push("        _rels.append(_rec)");
+  L.push("    return {");
+  L.push("        'format': 'scenedract/measured-report', 'version': 1,");
+  L.push("        'tool': 'SceneDract generated Blender Python — measured inside Blender at the end of the run',");
+  L.push("        'blender': {'version': bpy.app.version_string, 'versionTuple': list(bpy.app.version[:3])},");
+  L.push("        'ranAt': time.strftime('%Y-%m-%dT%H:%M:%S'),");
+  L.push("        'sceneIrHash': SCENEDRACT_IR_HASH,");
+  L.push("        'sceneName': IR.get('name'),");
+  L.push("        'profile': " + JSON.stringify({ target: prof.target, format: prof.format, file: prof.file || "" }) + ",");
+  L.push("        'checkpoint': _SD_CHECKPOINT,");
+  L.push("        'preflight': _SD_PREFLIGHT,");
+  L.push("        'counts': {'ownedObjects': len(_owned), 'meshes': sum(1 for _e in _owned if _e['type'] == 'MESH'), 'polygons': sum(_e['polygons'] or 0 for _e in _owned), 'triangles': sum(_e['triangles'] or 0 for _e in _owned), 'trianglesEvaluated': sum(_e['trianglesEvaluated'] or 0 for _e in _owned)},");
+  L.push("        'objects': _owned,");
+  L.push("        'relations': _rels,");
+  L.push("        'notes': ['polygons/triangles: base mesh as built (Bevel / Subdivision stay LIVE and are not in these counts)', 'trianglesEvaluated: via the evaluated depsgraph, live modifiers included — the render-relevant count', 'aabb / dimensionsM: evaluated world bounds converted back to Scene IR axes (x, y-up, z-forward)', 'relations.satisfied: re-evaluated on measured bounds with the same thresholds as the in-app predictor; null = not measurable in this runtime'],");
+  L.push("    }");
+  L.push("_SD_REPORT_PATH = None");
+  L.push("try:");
+  L.push("    _SD_REPORT_PATH = os.path.join(_sd_report_dir(), 'scenedract_report.json')");
+  L.push("    with open(_SD_REPORT_PATH, 'w', encoding='utf-8') as _f:");
+  L.push("        json.dump(_sd_measure(), _f, ensure_ascii=False, indent=1)");
+  L.push("    print('SCENEDRACT REPORT: measured run report written to ' + _SD_REPORT_PATH)");
+  L.push("except Exception as _exc:");
+  L.push("    print('SCENEDRACT REPORT: FAILED (' + str(_exc) + ') — the scene itself was built; only the report is missing')");
   L.push("print(f\"Scene IR built: {len(IR['objects'])} objects\")");
   return L.join("\n");
 }
@@ -29817,6 +30617,31 @@ function buildCertificate(){
     sceneIrHash: currentHash,
     hashMethod: "FNV-1a 64-bit over canonical JSON (object keys sorted recursively)",
     determinism: "The same Scene IR always generates the same Blender Python, Unity C# and preview. Re-running generation with this hash reproduces the identical scene — no model call is involved after the IR exists.",
+    measuredRun: (function(){
+      var r = (typeof measuredForHash === "function") ? measuredForHash(currentHash) : null;
+      if (!r) return "prediction only — no measured report imported for this IR hash. Run the generated Blender Python and import its scenedract_report.json (Validation pane) to attach the actual run here.";
+      var d = measuredDiff(currentIR, r);
+      return {
+        basis: "actual run of the generated Blender Python, measured inside Blender and imported back (scenedract/measured-report v1); the figures elsewhere in this certificate are pre-run predictions — this section is their measured counterpart",
+        blenderVersion: (r.blender && r.blender.version) || null,
+        ranAt: r.ranAt || null,
+        sceneName: r.sceneName || null,
+        reportFile: "scenedract_report.json",
+        checkpoint: r.checkpoint || null,
+        preflight: r.preflight || null,
+        counts: { irObjects: currentIR.objects.length,
+                  ownedObjectsMeasured: r.counts ? r.counts.ownedObjects : null,
+                  objectsFound: d.objectsFound, objectsMissing: d.objectsMissing,
+                  trianglesPredicted: d.trisPredicted,
+                  trianglesMeasuredBase: d.trisMeasured,
+                  trianglesMeasuredEvaluated: d.trisEvaluated,
+                  polygonsMeasured: r.counts ? r.counts.polygons : null },
+        relationsMeasured: { total: d.relationTotal, satisfied: d.relationSatisfied,
+                             violated: d.relationViolated, notMeasurable: d.relationUnknown },
+        dimensionMismatches: d.dimMismatches,
+        differences: d.lines
+      };
+    })(),
     validation: {
       counts: v.counts,
       checks: v.items.map(function(it){ var c = { result: it.level, check: it.title, detail: it.detail }; if (it.cat) c.catalog = it.cat; return c; })
@@ -30065,6 +30890,18 @@ function certificateText(){
     }
     L.push("");
   }
+  (function(){
+    var mr = c.measuredRun;
+    L.push("[" + T("実測レポート（Blender 実行結果）","Measured report (Blender run)") + "]");
+    if (!mr || typeof mr === "string"){ L.push(T("予測のみ — 実測レポート未取り込み","Prediction only — no measured report imported")); }
+    else {
+      L.push("Blender " + (mr.blenderVersion || "?") + " / " + (mr.ranAt || "") + " / checkpoint: " + (mr.checkpoint && mr.checkpoint.saved ? mr.checkpoint.path : ((mr.checkpoint && mr.checkpoint.reason) || "-")));
+      L.push("objects found " + mr.counts.objectsFound + " / " + mr.counts.irObjects + " (missing: " + (mr.counts.objectsMissing.join(", ") || "none") + "), triangles predicted " + mr.counts.trianglesPredicted + " -> measured base " + mr.counts.trianglesMeasuredBase + " / evaluated " + mr.counts.trianglesMeasuredEvaluated + ", relations satisfied " + mr.relationsMeasured.satisfied + " / " + mr.relationsMeasured.total + (mr.relationsMeasured.notMeasurable ? " (" + mr.relationsMeasured.notMeasurable + " not measurable)" : ""));
+      mr.differences.forEach(function(s){ L.push("DIFF: " + s); });
+      if (!mr.differences.length) L.push(T("予測との差異はありません。","No differences from prediction."));
+    }
+    L.push("");
+  })();
   L.push(T("出所: ","Provenance: ") + (c.provenance.source || T("（未記入）","(not recorded)")) + T(" / 素材ライセンス: "," / asset license: ") + (c.provenance.assetLicense || T("（未記入）","(not recorded)")));
   L.push("");
   if (c.disclosure && c.disclosure.lines){
@@ -30121,6 +30958,139 @@ function certificateText(){
     L.push("  Transparency (measured on Blender 5.2.0, declared alpha 0.4) — GLB: preserved (exported as alphaMode=BLEND, baseColorFactor alpha kept) / USD: LOST (preview-surface opacity written as 1; the Principled Alpha was not reflected) / FBX: preserved on round-trip");
   }
   return L.join("\n");
+}
+
+/* ---------------- Measured run reports (Blender feedback loop) ----
+   The generated Blender Python measures the scene it ACTUALLY built
+   and writes scenedract_report.json next to itself (see genBpy: the
+   preflight / checkpoint / report blocks). Importing that file here
+   upgrades the QA certificate from prediction-only to prediction +
+   measured: reports are stored under the IR hash they belong to, so
+   a report from another scene is shown as reference only and never
+   attached to the current certificate. Differences are computed
+   against the same predictor semantics (declaredRelations /
+   relationSatisfied / totalTris) the certificate already states.  */
+var measuredReports = {};
+var measuredLastImport = null;
+var MEASURED_LS_PREFIX = "scenedract.measured.";
+function measuredForHash(hash){
+  if (!hash) return null;
+  if (measuredReports[hash]) return measuredReports[hash];
+  try {
+    var raw = localStorage.getItem(MEASURED_LS_PREFIX + hash);
+    if (raw){
+      var r = JSON.parse(raw);
+      if (r && r.format === "scenedract/measured-report"){ measuredReports[hash] = r; return r; }
+    }
+  } catch(e){ /* storage unavailable — memory only */ }
+  return null;
+}
+function measuredDiff(ir, rep){
+  var d = { objectsFound: 0, objectsMissing: [], relationTotal: 0, relationSatisfied: 0,
+            relationViolated: [], relationUnknown: 0, dimMismatches: [],
+            trisPredicted: totalTris(ir),
+            trisMeasured: (rep.counts && typeof rep.counts.triangles === "number") ? rep.counts.triangles : null,
+            trisEvaluated: (rep.counts && typeof rep.counts.trianglesEvaluated === "number") ? rep.counts.trianglesEvaluated : null,
+            lines: [] };
+  var byName = {}, byIrId = {};
+  (rep.objects || []).forEach(function(o){
+    if (!o || !o.name) return;
+    byName[o.name] = o;
+    if (o.irId){ (byIrId[o.irId] = byIrId[o.irId] || []).push(o); }
+  });
+  ir.objects.forEach(function(o){
+    var found = (o.type === "mannequin") ? !!(byIrId[o.id] && byIrId[o.id].length) : !!byName[o.name];
+    if (found) d.objectsFound++;
+    else { d.objectsMissing.push(o.name); d.lines.push("object missing from the measured scene: " + o.name + " (declared in the IR, not found after the run)"); }
+  });
+  ir.objects.forEach(function(o){
+    if (o.type === "mannequin" || o.type === "light" || !o.size) return;
+    var m = byName[o.name];
+    if (!m || !m.dimensionsM) return;
+    var bad = [];
+    for (var i = 0; i < 3; i++){
+      var p = o.size[i], q = m.dimensionsM[i];
+      if (typeof q !== "number") continue;
+      if (Math.abs(p - q) > 0.01 && Math.abs(p - q) / Math.max(p, 0.01) > 0.02)
+        bad.push("xyz"[i] + " " + p + " -> " + (Math.round(q * 1000) / 1000));
+    }
+    if (bad.length){
+      d.dimMismatches.push({ name: o.name, detail: bad.join(", ") });
+      d.lines.push("dimensions differ: " + o.name + " (" + bad.join(", ") + " m; IR size -> measured)");
+    }
+  });
+  var pred = {};
+  declaredRelations(ir).forEach(function(r){ pred[r.aId + "|" + r.bId + "|" + r.type] = relationSatisfied(r); });
+  (rep.relations || []).forEach(function(r){
+    d.relationTotal++;
+    if (r.satisfied === true) d.relationSatisfied++;
+    else if (r.satisfied === null || r.satisfied === undefined) d.relationUnknown++;
+    else {
+      var key = r.aId + "|" + r.bId + "|" + r.type;
+      d.relationViolated.push({ a: r.a, b: r.b, type: r.type, predicted: pred[key] });
+      d.lines.push("relation violated in the actual run: " + r.a + " " + r.type + " " + r.b +
+        (pred[key] === true ? " (the IR-side prediction said satisfied)" : ""));
+    }
+  });
+  if (d.trisEvaluated !== null && d.trisPredicted > 0){
+    var ratio = d.trisEvaluated / Math.max(d.trisPredicted, 1);
+    if (ratio > 1.1 || ratio < 0.9)
+      d.lines.push("triangles: predicted " + d.trisPredicted.toLocaleString() + " (primitive estimate, live modifiers excluded) vs measured " +
+        d.trisEvaluated.toLocaleString() + " evaluated (live Bevel/Subdivision included)" +
+        (d.trisMeasured !== null ? "; base mesh measured " + d.trisMeasured.toLocaleString() : ""));
+  }
+  return d;
+}
+function renderMeasured(){
+  var host = $("measuredBody");
+  if (!host) return;
+  var rep = (typeof currentHash !== "undefined" && currentHash) ? measuredForHash(currentHash) : null;
+  var html = "";
+  if (rep && currentIR){
+    var d = measuredDiff(currentIR, rep);
+    html += "<div>" + esc(T("実測レポートを取り込みました。","Measured report imported.")) + " Blender " +
+      esc((rep.blender && rep.blender.version) || "?") + " / " + esc(rep.ranAt || "") +
+      (rep.sceneName ? " / " + esc(rep.sceneName) : "") + "</div>";
+    html += "<div>" + esc(T("実行前チェックポイント: ","Pre-run checkpoint: ")) +
+      (rep.checkpoint && rep.checkpoint.saved ? esc(rep.checkpoint.path || "") : esc((rep.checkpoint && rep.checkpoint.reason) || "-")) + "</div>";
+    html += "<div>" + esc(T("関係の再評価（実測）: ","Relations re-evaluated (measured): ")) + d.relationSatisfied + " / " + d.relationTotal +
+      (d.relationUnknown ? " (" + d.relationUnknown + esc(T(" 件は実測不可"," not measurable")) + ")" : "") + "</div>";
+    if (d.lines.length){
+      html += "<div>" + esc(T("予測との差異:","Differences from prediction:")) + "</div><ul>" +
+        d.lines.map(function(s){ return "<li>" + esc(s) + "</li>"; }).join("") + "</ul>";
+    } else {
+      html += "<div>" + esc(T("予測との差異はありません。","No differences from prediction.")) + "</div>";
+    }
+  } else if (measuredLastImport){
+    var r2 = measuredLastImport.report;
+    html += "<div>" + esc(T("このレポートは現在のシーンとは別の IR（ハッシュ不一致）のものです。証明書には付かず、参考としてのみ表示します。","This report belongs to a different scene (IR hash mismatch) — shown for reference only; it is not attached to the current certificate.")) + "</div>";
+    html += "<div>Blender " + esc((r2.blender && r2.blender.version) || "?") + " / " + esc(r2.ranAt || "") +
+      (r2.sceneName ? " / " + esc(r2.sceneName) : "") + "</div>";
+  } else {
+    html += "<div>" + esc(T("まだ実測レポートは取り込まれていません — 現在の証明書は予測のみです。","No measured report imported yet — the certificate is prediction-only.")) + "</div>";
+  }
+  host.innerHTML = html;
+}
+function importMeasuredReport(file){
+  var reader = new FileReader();
+  reader.onload = function(){
+    var host = $("measuredBody");
+    try {
+      var rep = JSON.parse(String(reader.result || ""));
+      if (!rep || rep.format !== "scenedract/measured-report" || !rep.counts || !Array.isArray(rep.objects))
+        throw new Error("not a scenedract/measured-report file");
+      var hash = typeof rep.sceneIrHash === "string" ? rep.sceneIrHash : "";
+      measuredLastImport = { hash: hash, report: rep };
+      if (hash){
+        measuredReports[hash] = rep;
+        try { localStorage.setItem(MEASURED_LS_PREFIX + hash, JSON.stringify(rep)); } catch(e){ /* memory only */ }
+      }
+      renderMeasured();
+    } catch(e){
+      if (host) host.innerHTML = "<div>" + esc(T("実測レポートとして読み込めませんでした。","Could not read that file as a measured report: ")) + esc(e && e.message ? e.message : String(e)) + "</div>";
+    }
+  };
+  reader.readAsText(file);
 }
 
 /* ---------------- Central refresh ---------------- */
@@ -30661,6 +31631,7 @@ function renderValidation(){
       (it.detail ? "<div class='vd'>" + esc(it.detail) + "</div>" : "") + "</div></li>";
   }).join("");
   renderGuides();
+  renderMeasured();
 }
 /* ---------------- Simple mode: plain-language validation ----------------
    The same lastValidation, re-expressed without jargon in three
@@ -31172,6 +32143,21 @@ function bpyChecks(code, ir, profile){
        patObjsCk.every(function(o){ return !!patternOf(o.material); }) && /pat_suffix/.test(exec) && /_pat/.test(exec),
        patternSummary(ir).distinct + " distinct patterned materials");
   }
+  /* --- run-evidence statements (feedback loop) --- */
+  ck("run-evidence: environment preflight probes before the build (version + engine enum + export op, plain-language stop)",
+     /def _sd_preflight\(\)/.test(exec) && exec.indexOf("SCENEDRACT PREFLIGHT FAILED") >= 0 &&
+     exec.indexOf("_sd_preflight()") < exec.indexOf("IR = json.loads") &&
+     exec.indexOf("get_rna_type") >= 0 && exec.indexOf("bl_rna") >= 0);
+  ck("run-evidence: pre-run checkpoint saves a COPY of the current file before anything is built (copy=True)",
+     (function(){ var ca = extractCallArgs(exec, "bpy.ops.wm.save_as_mainfile");
+       return !!ca && /(^|,)\s*copy\s*=\s*True/.test(ca); })());
+  ck("run-evidence: measured report is written at the end (scenedract_report.json, source IR hash embedded)",
+     exec.indexOf("scenedract_report.json") >= 0 && exec.indexOf("'scenedract/measured-report'") >= 0 &&
+     exec.indexOf("SCENEDRACT_IR_HASH") >= 0 && exec.indexOf(stableHash(canonicalStringify(ir))) >= 0);
+  ck("run-evidence: the preflight probes THIS profile's export operator",
+     exec.indexOf("_SD_EXPORT_OPNAME = '" + (profile.format === "GLB" ? "gltf" : (profile.format.indexOf("USD") === 0 ? "usd_export" : "fbx")) + "'") >= 0);
+  ck("run-evidence: the report re-evaluates the declared relations on measured bounds",
+     exec.indexOf("_sd_measure") >= 0 && exec.indexOf("'satisfied'") >= 0 && exec.indexOf("_sd_to_ir_aabb") >= 0);
   return c;
 }
 function unityChecks(code){
@@ -31543,6 +32529,7 @@ OpsExportScene.fbx = staticmethod(_op("export_scene.fbx"))
 class OpsWm:
     pass
 OpsWm.usd_export = staticmethod(_op("wm.usd_export"))
+OpsWm.save_as_mainfile = staticmethod(_op("wm.save_as_mainfile"))
 class Ops:
     export_scene = OpsExportScene()
     wm = OpsWm()
@@ -31550,7 +32537,7 @@ class Ops:
 bpy = types.ModuleType("bpy")
 bpy.app = types.SimpleNamespace(version=(5, 2, 0), version_string="5.2.0")
 bpy.context = Context()
-bpy.data = types.SimpleNamespace(collections=DataCollections(), objects=DataObjects(),
+bpy.data = types.SimpleNamespace(filepath="", collections=DataCollections(), objects=DataObjects(),
                                  meshes=DataMeshes(), materials=DataMaterials(),
                                  lights=DataLights(), cameras=DataCameras(), worlds=DataWorlds(),
                                  actions=DataActions(), images=DataImages())
@@ -33930,6 +34917,8 @@ function init(){
     setStatus("ok", T("QA証明書を書き出しました（IRハッシュ: ","QA certificate downloaded (IR hash: ") + currentHash + T("）。書き出しファイルと一緒に対象ソフトへ渡せます。","). Ship it alongside the exported scene file."));
   });
   $("certTxtBtn").addEventListener("click", function(){ download("qa_certificate_summary.txt", certificateText(), "text/plain"); });
+  $("measuredImportBtn").addEventListener("click", function(){ $("measuredFile").click(); });
+  $("measuredFile").addEventListener("change", function(){ if (this.files && this.files[0]) importMeasuredReport(this.files[0]); this.value = ""; });
   $("dlBtn").addEventListener("click", function(){ var c = tabContent(); download(c.name, c.text, c.mime); });
   $("allDlBtn").addEventListener("click", function(){
     download("scene_ir.json", JSON.stringify(currentIR, null, 2), "application/json");
