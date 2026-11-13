@@ -8,6 +8,8 @@ SceneDract は、文章で頼んだ内容を「設計図（Scene IR）」に変�
 
 Releases ページから、お使いの OS 向けのパッケージをダウンロードしてください。インストールは不要で、解凍してそのまま起動できます。
 
+> **注意:** v1.0.0 はまだ公開されていません。リリースは現在下書きの状態で、パッケージの公開は後日行います。公開されるまでは、以下のパッケージをダウンロードすることはできません。
+
 - Windows (x64): `SceneDract-v1.0.0-windows-x64.zip` → `SceneDract.exe`
 - Windows (ARM64): `SceneDract-v1.0.0-windows-arm64.zip` → `SceneDract.exe`
 - macOS (Apple Silicon): `SceneDract-v1.0.0-macos-arm64.zip` → `SceneDract.app`
