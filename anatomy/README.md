@@ -87,8 +87,13 @@ collector side / the owner).
 `anatomy` (weight 2, like the other rate components):
 
 - Provide rules by embedding them in the IR as `ir.anatomyRules`
-  (the parsed contents of `rules.json`), or call
-  `setAnatomyRules(rules)` in the app session.
+  (the parsed contents of `rules.json`), or load a `rules.json`
+  file in the app: the validation card's "Anatomy knowledge model"
+  box reads the file locally, validates it before applying, shows
+  the loaded file and rule counts (segment-proportion rules judged
+  vs recorded-only), and on failure shows the reason and keeps the
+  state in effect before the attempt. Programmatically the same
+  path is `setAnatomyRules(rules)`.
 - For every mannequin figure, each segment ratio derived from
   `MANNEQUIN_PARTS` is checked against the matching
   `segmentRatio.*` rule; the component is the violated share of all
