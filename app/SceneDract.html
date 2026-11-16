@@ -802,6 +802,16 @@
         </div>
         <div id="measuredBody" class="rlog"></div>
       </div>
+      <div class="rlogbox">
+        <h4><span class="ja-only">解剖学知識モデル（rules.json）</span><span class="en-only">Anatomy knowledge model (rules.json)</span><span class="zh-only">解剖学知识模型（rules.json）</span><span class="ko-only">해부학 지식 모델(rules.json)</span><span class="es-only">Modelo de conocimiento anatómico (rules.json)</span></h4>
+        <p class="hint"><span class="ja-only">anatomy/ の学習パイプラインが作る rules.json を読み込むと、シーンエネルギーの第7成分「解剖学違反率」が有効になり、マネキンの体節比率が実測統計の許容範囲と照合されます。ファイルはこの端末内でのみ読み、どこにも送信しません。関節角度のルールは記録されますが、IR に姿勢表現が無いため現時点では判定には使いません。読み込みに失敗した場合は理由を表示し、それまでの状態で検証を続けます。</span><span class="en-only">Load a rules.json built by the anatomy/ learning pipeline and the seventh scene-energy component — the anatomy violation rate — goes live: mannequin segment proportions are checked against the measured accept ranges. The file is read on this device only and sent nowhere. Joint-angle rules are recorded but not judged yet, because the IR carries no pose. If a load fails, the reason is shown and validation continues with the state in effect before the attempt.</span><span class="zh-only">加载 anatomy/ 学习管线生成的 rules.json 后,场景能量的第 7 个成分「解剖学违反率」即会启用,人体模型的体节比例将与实测统计的接受范围对照。文件只在此设备上读取,不会发送到任何地方。关节角度规则会被记录,但由于 IR 没有姿势表达,目前不用于判定。加载失败时会显示原因,并以尝试之前的状态继续验证。</span><span class="ko-only">anatomy/ 학습 파이프라인이 만든 rules.json을 불러오면 장면 에너지의 7번째 성분 '해부학 위반율'이 활성화되어, 마네킹의 체절 비율이 실측 통계의 허용 범위와 대조됩니다. 파일은 이 기기에서만 읽고 어디에도 보내지 않습니다. 관절 각도 규칙은 기록되지만, IR에 자세 표현이 없어 현재는 판정에 쓰지 않습니다. 불러오기에 실패하면 이유를 표시하고, 시도 전의 상태로 검증을 계속합니다.</span><span class="es-only">Carga un rules.json generado por el pipeline de aprendizaje de anatomy/ y el séptimo componente de la energía de escena — la tasa de violación anatómica — se activa: las proporciones de los segmentos del maniquí se contrastan con los rangos de aceptación medidos. El archivo se lee solo en este dispositivo y no se envía a ninguna parte. Las reglas de ángulos articulares se registran pero aún no se juzgan, porque el IR no lleva postura. Si una carga falla, se muestra el motivo y la validación continúa con el estado anterior al intento.</span></p>
+        <div class="btnrow">
+          <button class="btn btn-ghost btn-sm" id="anatomyImportBtn" type="button"><span class="ja-only">解剖学ルールを読み込む (.json)</span><span class="en-only">Load anatomy rules (.json)</span><span class="zh-only">加载解剖学规则 (.json)</span><span class="ko-only">해부학 규칙 불러오기 (.json)</span><span class="es-only">Cargar reglas de anatomía (.json)</span></button>
+          <input type="file" id="anatomyFile" accept=".json,application/json" hidden>
+          <button class="btn btn-ghost btn-sm" id="anatomyUnloadBtn" type="button"><span class="ja-only">読み込んだルールを外す</span><span class="en-only">Unload the loaded rules</span><span class="zh-only">卸载已加载的规则</span><span class="ko-only">불러온 규칙 해제</span><span class="es-only">Quitar las reglas cargadas</span></button>
+        </div>
+        <div id="anatomyBody" class="rlog"></div>
+      </div>
       <div class="only-adv" data-vis="advanced" id="advRuleDetails" style="padding:0 16px 16px">
         <h4 style="margin:8px 0 6px;font-size:13.5px;font-weight:700"><span class="ja-only">上級: 検証ルールの詳細（閾値と根拠）</span><span class="en-only">Advanced: validation rules in detail (thresholds &amp; rationale)</span><span class="zh-only">高级: 验证规则详情（阈值与依据）</span><span class="ko-only">고급: 검증 규칙 상세(임계값과 근거)</span><span class="es-only">Avanzado: reglas de validación al detalle (umbrales y justificación)</span></h4>
         <div class="tblwrap" style="box-shadow:none"><table style="min-width:520px">
@@ -29755,7 +29765,9 @@ function sceneEnergy(ir){
    anatomy/README.md) and reaches this code as data, in one of two
    ways: embedded in the IR as ir.anatomyRules (the parsed contents
    of rules.json, so a work bundle can carry the exact rules it was
-   judged against), or loaded for the session via setAnatomyRules().
+   judged against), or loaded for the session via setAnatomyRules()
+   — which is what the validation card's rules.json loader calls
+   after validating the picked file (see importAnatomyRules).
    Rules carry their basis (statistic, percentile method, sample
    count) and the model's content hash, so a violation can always be
    explained.  With no model loaded — or no mannequin in the scene —
@@ -31182,6 +31194,111 @@ function importMeasuredReport(file){
   reader.readAsText(file);
 }
 
+/* ---------------- Anatomy rules loading (UI) ----------------
+   The user-facing path to the anatomy knowledge model: pick a
+   rules.json produced by the anatomy/ learning pipeline and the
+   seventh energy component goes live for the session.  The parsed
+   data is validated BEFORE the store is touched, so a failed load
+   never clobbers a working model — the reason is rendered here and
+   validation continues with whatever was in effect.  The file is
+   read locally (FileReader), exactly like the measured report
+   above; nothing is sent anywhere.  Rules the census cannot judge
+   yet (joint angles — the IR has no pose) are counted honestly as
+   recorded-only, never silently dropped.                        */
+var anatomyLoadInfo = null;   /* { name, counts, modelHash } of the session-loaded model */
+var anatomyLoadError = null;  /* reason of the last failed load attempt, if any */
+function anatomyRulesProblem(parsed){
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+    return T("トップレベルが JSON オブジェクトではありません","the top level is not a JSON object");
+  if (parsed.schemaVersion !== ANATOMY_SCHEMA_VERSION)
+    return T("schemaVersion が " + ANATOMY_SCHEMA_VERSION + " ではありません（実際は " + String(parsed.schemaVersion) + "）",
+             "schemaVersion is not " + ANATOMY_SCHEMA_VERSION + " (got " + String(parsed.schemaVersion) + ")");
+  if (!Array.isArray(parsed.rules))
+    return T("rules が配列ではありません","rules is not an array");
+  return null;
+}
+function anatomyRuleCounts(rules){
+  var judged = 0, recorded = 0, ignored = 0, seen = {};
+  (Array.isArray(rules) ? rules : []).forEach(function(r){
+    if (!r || typeof r.target !== "string" || !Array.isArray(r.accept) || r.accept.length !== 2 ||
+        typeof r.accept[0] !== "number" || typeof r.accept[1] !== "number" || r.accept[0] > r.accept[1]){ ignored++; return; }
+    if (r.target.indexOf("segmentRatio.") === 0 && !seen[r.target]){ seen[r.target] = 1; judged++; }
+    else recorded++;
+  });
+  return { total: Array.isArray(rules) ? rules.length : 0, judged: judged, recorded: recorded, ignored: ignored };
+}
+function anatomyCountsText(c){
+  return T("ルール " + c.total + " 件（判定に使う体節比率 " + c.judged + " 件／記録のみ " + c.recorded + " 件",
+           c.total + " rules (" + c.judged + " segment-proportion rules judged / " + c.recorded + " recorded only") +
+    (c.ignored ? T("／形式が不正で使えない " + c.ignored + " 件", " / " + c.ignored + " malformed and unusable") : "") +
+    T("）", ")");
+}
+function renderAnatomyRules(){
+  var host = $("anatomyBody"); if (!host) return;
+  var lines = [];
+  if (anatomyLoadError)
+    lines.push("<div>" + esc(T("解剖学ルールを読み込めませんでした: ","Could not load the anatomy rules: ")) + esc(anatomyLoadError) +
+      esc(T(" — それまでの状態で検証を続けます。"," — validation continues with the state in effect before this attempt.")) + "</div>");
+  var embedded = null;
+  if (currentIR && currentIR.anatomyRules && typeof currentIR.anatomyRules === "object" &&
+      !Array.isArray(currentIR.anatomyRules) && currentIR.anatomyRules.schemaVersion === ANATOMY_SCHEMA_VERSION &&
+      Array.isArray(currentIR.anatomyRules.rules)) embedded = currentIR.anatomyRules;
+  if (embedded){
+    lines.push("<div>" + esc(T("この作品には解剖学ルールが埋め込まれており、そちらが優先されます: ","This work embeds its own anatomy rules, and they take precedence: ")) +
+      esc(anatomyCountsText(anatomyRuleCounts(embedded.rules))) +
+      (embedded.modelHash ? " / model " + esc(String(embedded.modelHash)) : "") + "</div>");
+  } else if (anatomyRulesStore){
+    var info = anatomyLoadInfo;
+    var c = info ? info.counts : anatomyRuleCounts(anatomyRulesStore.rules);
+    lines.push("<div>" + esc(T("解剖学ルールを読み込み済みです","Anatomy rules loaded")) +
+      (info && info.name ? ": " + esc(info.name) : "") + " — " + esc(anatomyCountsText(c)) +
+      ((info && info.modelHash) ? " / model " + esc(String(info.modelHash)) : "") + "</div>");
+    var cen = currentIR ? anatomyCensus(currentIR) : null;
+    if (cen)
+      lines.push("<div>" + esc(T("現在のシーンへの適用: マネキン " + cen.figures + " 体・体節チェック " + cen.checked + " 件中 " + cen.violated.length + " 件が許容範囲外です。",
+        "Applied to the current scene: " + cen.figures + " mannequin(s), " + cen.violated.length + " of " + cen.checked + " segment checks outside the accept ranges.")) + "</div>");
+    else
+      lines.push("<div>" + esc(T("現在のシーンには判定できるマネキン体節が無いため、解剖学成分は n/a です（マネキンを置くと適用されます）。",
+        "The current scene has no judgeable mannequin segments, so the anatomy component is n/a (it applies as soon as a mannequin is present).")) + "</div>");
+  } else {
+    lines.push("<div>" + esc(T("解剖学ルールはまだ読み込まれていません — 解剖学成分は n/a で、重みは E から外れます。",
+      "No anatomy rules loaded yet — the anatomy component is n/a and its weight drops out of E.")) + "</div>");
+  }
+  host.innerHTML = lines.join("");
+}
+function refreshAfterAnatomyChange(){
+  if (currentIR){ lastValidation = validate(currentIR, budgetKey); renderValidation(); refreshBadgeOnly(); }
+  else renderAnatomyRules();
+}
+function applyAnatomyRulesData(parsed, sourceName){
+  var problem = anatomyRulesProblem(parsed);
+  if (problem){ anatomyLoadError = problem; renderAnatomyRules(); return false; }
+  if (!setAnatomyRules(parsed)){ anatomyLoadError = T("検証器がモデルを受け付けませんでした","the validator refused the model"); renderAnatomyRules(); return false; }
+  anatomyLoadError = null;
+  anatomyLoadInfo = { name: sourceName || "", counts: anatomyRuleCounts(parsed.rules), modelHash: parsed.modelHash || null };
+  refreshAfterAnatomyChange();
+  return true;
+}
+function unloadAnatomyRules(){
+  setAnatomyRules(null);
+  anatomyLoadInfo = null; anatomyLoadError = null;
+  refreshAfterAnatomyChange();
+}
+function importAnatomyRules(file){
+  var reader = new FileReader();
+  reader.onload = function(){
+    var parsed;
+    try { parsed = JSON.parse(String(reader.result || "")); }
+    catch(e){
+      anatomyLoadError = T("JSON として解析できません: ","not parseable as JSON: ") + (e && e.message ? e.message : String(e));
+      renderAnatomyRules();
+      return;
+    }
+    applyAnatomyRulesData(parsed, file && file.name ? file.name : "");
+  };
+  reader.readAsText(file);
+}
+
 /* ---------------- Central refresh ---------------- */
 var currentIR = null, budgetKey = "pc", lastValidation = null, activeTab = "ir",
     currentHash = "", repairLog = [];
@@ -31721,6 +31838,7 @@ function renderValidation(){
   }).join("");
   renderGuides();
   renderMeasured();
+  renderAnatomyRules();
 }
 /* ---------------- Simple mode: plain-language validation ----------------
    The same lastValidation, re-expressed without jargon in three
@@ -34021,6 +34139,39 @@ function runSelfAudit(){
       certAna.sceneEnergy.components.anatomy.violated === 1 &&
       certAna.sceneEnergy.weights.anatomy === 2);
     currentIR = prevAnaIR; currentHash = prevAnaHash;
+    /* UI wiring: the rules.json loader in the validation card.
+       The loader validates BEFORE touching the store, so a failed
+       load keeps the working model; the status area names the
+       loaded file and its rule counts.  Bookkeeping is restored. */
+    var prevAnaInfo = anatomyLoadInfo, prevAnaErr = anatomyLoadError;
+    anaCk("anatomy UI: the rules.json load controls and status area exist in the validation card",
+      !!$("anatomyImportBtn") && !!$("anatomyFile") && !!$("anatomyUnloadBtn") && !!$("anatomyBody"));
+    anaCk("anatomy UI: the loader validator names the problem (foreign schema version, non-array rules, non-object top level) and accepts a valid model",
+      anatomyRulesProblem({ schemaVersion: 2, rules: [] }) !== null &&
+      anatomyRulesProblem({ schemaVersion: 1, rules: {} }) !== null &&
+      anatomyRulesProblem([1, 2, 3]) !== null &&
+      anatomyRulesProblem(anaPassRules) === null);
+    var anaUiRules = JSON.parse(JSON.stringify(anaPassRules));
+    anaUiRules.rules.push(anaRule("jointAngle.elbow", "jointAngle.elbow", 20, 170));
+    anaUiRules.rules.push({ id: "broken", target: "segmentRatio.head", accept: [0.30, 0.10] });
+    anaCk("anatomy UI: rule counts separate judged segment rules (6) from recorded-only (1) and malformed (1) of 8",
+      (function(){ var c = anatomyRuleCounts(anaUiRules.rules); return c.total === 8 && c.judged === 6 && c.recorded === 1 && c.ignored === 1; })());
+    anaCk("anatomy UI: loading a valid model through the loader path makes the component live for a mannequin scene",
+      applyAnatomyRulesData(anaUiRules, "audit-fixture.json") === true &&
+      anatomyRulesStore === anaUiRules &&
+      typeof sceneEnergy(anaScene()).components.anatomy === "object" &&
+      !!anatomyLoadInfo && anatomyLoadInfo.name === "audit-fixture.json" && anatomyLoadError === null);
+    anaCk("anatomy UI: the status area shows the loaded file name while the model is in effect",
+      (function(){ renderAnatomyRules(); var h = $("anatomyBody"); return !!h && h.textContent.indexOf("audit-fixture.json") >= 0; })());
+    anaCk("anatomy UI: a failed load reports a reason and keeps the working model (no silent clobber)",
+      applyAnatomyRulesData({ schemaVersion: 2, rules: [] }, "bad.json") === false &&
+      anatomyRulesStore === anaUiRules && !!anatomyLoadError &&
+      typeof sceneEnergy(anaScene()).components.anatomy === "object");
+    unloadAnatomyRules();
+    anaCk("anatomy UI: unloading returns the component to n/a and clears the load bookkeeping",
+      anatomyRulesStore === null && anatomyLoadInfo === null && anatomyLoadError === null &&
+      typeof sceneEnergy(anaScene()).components.anatomy === "string");
+    anatomyLoadInfo = prevAnaInfo; anatomyLoadError = prevAnaErr; renderAnatomyRules();
   } catch(e){ anaCk("anatomy checks executed", false); }
   anatomyRulesStore = prevAnaStore;
   var html = "<div class='audsum'><span>CHECKS <b>" + totalPass + " / " + totalChecks + "</b></span><span>GUIDES <b>" + GUIDES.length + "</b></span>" +
@@ -35075,6 +35226,9 @@ function init(){
   $("certTxtBtn").addEventListener("click", function(){ download("qa_certificate_summary.txt", certificateText(), "text/plain"); });
   $("measuredImportBtn").addEventListener("click", function(){ $("measuredFile").click(); });
   $("measuredFile").addEventListener("change", function(){ if (this.files && this.files[0]) importMeasuredReport(this.files[0]); this.value = ""; });
+  $("anatomyImportBtn").addEventListener("click", function(){ $("anatomyFile").click(); });
+  $("anatomyFile").addEventListener("change", function(){ if (this.files && this.files[0]) importAnatomyRules(this.files[0]); this.value = ""; });
+  $("anatomyUnloadBtn").addEventListener("click", function(){ unloadAnatomyRules(); });
   $("dlBtn").addEventListener("click", function(){ var c = tabContent(); download(c.name, c.text, c.mime); });
   $("allDlBtn").addEventListener("click", function(){
     download("scene_ir.json", JSON.stringify(currentIR, null, 2), "application/json");
