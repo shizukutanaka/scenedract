@@ -1,0 +1,6 @@
+# Learning pipeline (anatomy/).  The pose model file itself is NOT a
+# pip dependency: supply a pose_landmarker .task file yourself (see
+# README.md) via --model or ANATOMY_POSE_MODEL.
+numpy>=1.26
+Pillow>=10
+mediapipe>=0.10
