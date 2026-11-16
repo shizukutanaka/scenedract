@@ -86,6 +86,14 @@
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
   .chip{border:1px solid var(--line2);background:var(--panel2);color:var(--ink);border-radius:999px;padding:4px 12px;font-size:12.5px;min-height:2rem}
   .chip:hover{border-color:var(--accent);color:var(--accent-ink)}
+  .galgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;margin-top:8px}
+  .galcard{display:flex;flex-direction:column;align-items:stretch;gap:3px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);border-radius:10px;padding:7px 8px 8px;font:inherit;text-align:left;cursor:pointer}
+  .galcard:hover{border-color:var(--accent)}
+  .galcard[aria-current="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .galcard .galthumb{display:block;border-radius:6px;background:#101216;overflow:hidden}
+  .galcard .galthumb svg{display:block;width:100%;height:auto}
+  .galcard .galname{font-size:12.5px;font-weight:700;line-height:1.35}
+  .galcard .galmeta{font-size:11px;color:var(--ink3);line-height:1.4}
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:8px;border:1px solid transparent;padding:8px 16px;font-weight:700;font-size:14px;min-height:2.5rem}
   .btn-primary{background:var(--accent);color:#fff;width:100%;margin-top:14px}
   .btn-primary:hover{background:var(--accent-ink)}
@@ -543,6 +551,11 @@
         <textarea id="prompt">ローポリのダンジョンの一室。石の壁と床、中央に松明、隅に木箱と樽、暖かい光。</textarea>
         <div class="chips" id="presets"></div>
         <p class="hint only-simple"><span class="ja-only">プリセットを押すか、上の欄に作りたいものを言葉で書いてください。細かい設定は「標準」「上級」に切り替えると出てきます。</span><span class="en-only">Tap a preset, or describe what you want in the box above. Finer settings appear when you switch to Standard or Advanced.</span><span class="zh-only">点一个预设,或在上面的栏里用语言写下想做的东西。更细的设置在切换到「标准」「高级」后会出现。</span><span class="ko-only">프리셋을 누르거나, 위 칸에 만들고 싶은 것을 말로 쓰세요. 세부 설정은 '표준' '고급'으로 전환하면 나옵니다.</span><span class="es-only">Toca un preset, o describe lo que quieres en la caja de arriba. Los ajustes más finos aparecen al cambiar a Estándar o Avanzado.</span></p>
+
+        <label class="flabel"><span class="ja-only">作例ギャラリー（完成した設計図を開く）</span><span class="en-only">Example gallery (open a finished blueprint)</span><span class="zh-only">示例画廊（打开完成的蓝图）</span><span class="ko-only">작례 갤러리(완성된 설계도 열기)</span><span class="es-only">Galería de ejemplos (abrir un plano terminado)</span></label>
+        <div class="galgrid" id="galleryGrid"></div>
+        <div id="galleryInfo" class="rlog"></div>
+        <p class="hint"><span class="ja-only">作例は完成した設計図（Scene IR）そのものです。開くとプレビューに表示され、そのまま編集・自動修復・書き出しの対象になります。開かれるのは複製で、作例そのものは変わりません。</span><span class="en-only">Each example is a finished blueprint (Scene IR) itself. Opening one shows it in the preview and makes it the target of editing, auto-repair and export. You open a copy — the example itself never changes.</span><span class="zh-only">每个示例都是完成的蓝图（Scene IR）本身。打开后会在预览中显示,并成为编辑、自动修复和导出的对象。打开的是副本,示例本身不会改变。</span><span class="ko-only">작례는 완성된 설계도(Scene IR) 그 자체입니다. 열면 미리보기에 표시되고, 그대로 편집·자동 수리·내보내기의 대상이 됩니다. 열리는 것은 사본이며, 작례 자체는 변하지 않습니다.</span><span class="es-only">Cada ejemplo es un plano terminado (Scene IR) en sí mismo. Al abrirlo se muestra en la vista previa y pasa a ser el objeto de edición, autorreparación y exportación. Abres una copia: el ejemplo en sí nunca cambia.</span></p>
 
         <label class="flabel expert-el"><span class="ja-only">プランナーのエンジン</span><span class="en-only" data-t="プランナーのエンジン">Planner engine</span><span class="zh-only">规划器引擎</span><span class="ko-only">플래너 엔진</span><span class="es-only">Motor del planificador</span></label>
         <div class="seg expert-el" role="group" aria-label="Planner engine">
@@ -31325,6 +31338,7 @@ function refreshAll(keepStage){
   badge.textContent = lastValidation.counts.fail ? ("FAIL " + lastValidation.counts.fail)
     : lastValidation.counts.warn ? ("WARN " + lastValidation.counts.warn) : "ALL PASS";
   if (!keepStage) applyStageVisual();
+  renderGalleryInfo();
   scheduleAutosave();
   updateShareUI();
 }
@@ -32090,6 +32104,7 @@ function applyProjectData(data, sourceLabel){
     exportProfileId = data.exportProfile; renderExportProfiles();
   }
   repairLog = [];
+  galleryOpenInfo = null; galleryOpenHash = "";
   currentIR = ensureGroups(ir);
   lastPlanner = { engine: "import", detail: "blueprint loaded from " + (sourceLabel || "a file"), model: "" };
   stageIdx = 0; renderStages(); refreshAll();
@@ -34174,6 +34189,49 @@ function runSelfAudit(){
     anatomyLoadInfo = prevAnaInfo; anatomyLoadError = prevAnaErr; renderAnatomyRules();
   } catch(e){ anaCk("anatomy checks executed", false); }
   anatomyRulesStore = prevAnaStore;
+  /* --- built-in example gallery: every shipped example must open as a
+     clean, converged blueprint through the real project-load path --- */
+  var galFails = [];
+  function galCk(name, ok){ totalChecks++; if (ok) totalPass++; else { galFails.push(name); failures.push("gallery: " + name); } }
+  try {
+    galCk("gallery UI: grid and status region exist in the planner card", !!$("galleryGrid") && !!$("galleryInfo"));
+    galCk("gallery: 6-10 built-in examples", GALLERY.length >= 6 && GALLERY.length <= 10);
+    var galKeys = {}, galDup = false;
+    GALLERY.forEach(function(g){ if (galKeys[g.key]) galDup = true; galKeys[g.key] = 1; });
+    galCk("gallery: example keys are unique", !galDup);
+    galCk("gallery: every example carries a non-empty name in all 5 UI languages",
+      GALLERY.every(function(g){ return ["ja","en","zh","ko","es"].every(function(k){ return typeof g[k] === "string" && g[k].length > 0; }); }));
+    GALLERY.forEach(function(g){
+      var ir = g.build();
+      galCk("gallery " + g.key + ": passes IR schema validation", validateIRSchema(ir).length === 0);
+      var gir = ensureGroups(JSON.parse(JSON.stringify(ir)));
+      var gv = validate(gir, "pc");
+      galCk("gallery " + g.key + ": validator reports zero fails and zero warnings", gv.counts.fail === 0 && gv.counts.warn === 0);
+      galCk("gallery " + g.key + ": scene energy is converged (E <= " + ENERGY_CONVERGED_E + ")", sceneEnergy(gir).E <= ENERGY_CONVERGED_E);
+      var svg = galleryThumbSvg(gir);
+      galCk("gallery " + g.key + ": thumbnail renders at least one polygon per object",
+        svg.indexOf("<svg") === 0 && (svg.match(/<polygon/g) || []).length >= gir.objects.length);
+    });
+    var galA = GALLERY[0].build(), galB = GALLERY[0].build();
+    galA.objects[0].position[0] += 100;
+    galCk("gallery: opening an example works on a copy (builds are independent)", galB.objects[0].position[0] !== galA.objects[0].position[0]);
+    var prevGalIR = currentIR, prevGalHash = currentHash, prevGalPlanner = lastPlanner,
+        prevGalInfo = galleryOpenInfo, prevGalOpenHash = galleryOpenHash;
+    var galFirst = GALLERY[0];
+    var galOpened = openGalleryItem(galFirst.key);
+    galCk("gallery: openGalleryItem loads an example through the project-load path", galOpened === true);
+    galCk("gallery: the opened scene is the example itself (same name and object count)",
+      !!currentIR && currentIR.name === galFirst.build().name && currentIR.objects.length === galFirst.build().objects.length);
+    galCk("gallery: the open state names the example on screen",
+      !!galleryOpenInfo && galleryOpenInfo.key === galFirst.key &&
+      ($("galleryInfo").textContent || "").indexOf(L5(galFirst)) >= 0);
+    var galHashAfterOpen = currentHash;
+    galCk("gallery: an unknown key is refused and leaves the scene untouched",
+      openGalleryItem("no-such-gallery-key") === false && currentHash === galHashAfterOpen);
+    currentIR = prevGalIR; currentHash = prevGalHash; lastPlanner = prevGalPlanner;
+    galleryOpenInfo = prevGalInfo; galleryOpenHash = prevGalOpenHash;
+    refreshAll(true); renderGallery();
+  } catch(e){ galCk("gallery checks executed", false); }
   var html = "<div class='audsum'><span>CHECKS <b>" + totalPass + " / " + totalChecks + "</b></span><span>GUIDES <b>" + GUIDES.length + "</b></span>" +
     (reach ? "<span>" + T("かんたん到達性 ","SIMPLE PATH ") + "<b>" + reach.steps + T(" ステップ"," STEPS") + "</b> (<= 5)</span>" : "") + "<span>" +
     (failures.length ? T("失敗 ","Failures: ") + failures.length : T("全組み合わせ合格","All combinations pass")) + "</span><span>" +
@@ -34226,6 +34284,11 @@ function runSelfAudit(){
       T("製品名: 画面タイトル・ヘッダー・表示テキスト・生成コードのクレジット・QA証明書の発行者・作品バンドルの app 表記・作品パッケージ・保存ファイルの format 識別子・ブラウザ保存キーのすべてが SceneDract で、改名前の仮名はどこにも残っていません。", "Product name: the document title, header, rendered text, generated-code credits, the QA certificate's issuer, the work bundle's app field, the work package, the saved files' format identifiers and the browser storage keys all read SceneDract, and the pre-rename placeholder name survives nowhere.") +
       "</div></div></li></ul>";
   }
+  if (!galFails.length){
+    html += "<ul class='vlist'><li><span class='vbadge pass'>PASS</span><div><div>" +
+      T("作例ギャラリー（2026-11-16）: 内蔵作例 " + GALLERY.length + " 件すべてが、スキーマ検証・検証器（失敗0・警告0）・シーンエネルギーの収束条件を満たし、サムネイルが描け、プロジェクト読み込みと同じ経路で開いてそのまま編集・書き出しの対象になる（開かれるのは複製で作例自体は不変）ことを確認。開いた作例名の画面表示と、未知のキーの拒否も検証。", "Built-in example gallery (2026-11-16): all " + GALLERY.length + " shipped examples pass schema validation, the validator (zero fails, zero warnings) and the scene-energy convergence bar; thumbnails render; each opens through the same path as a project file and becomes a normal editable/exportable scene (a copy — the example itself never changes). The on-screen example name and the refusal of unknown keys are verified too.") +
+      "</div></div></li></ul>";
+  }
   host.innerHTML = html;
   var advSum = $("advAuditSummary");
   if (advSum) advSum.textContent = totalPass + " / " + totalChecks + (failures.length ? " — FAIL " + failures.length : " — ALL PASS");
@@ -34246,6 +34309,7 @@ function runSelfAudit(){
   if (!compFails.length) auditSummaryText += "\nCompetitor-scan improvements (2026-11-13) are included in the totals above: numeric scene-health metrics in the QA certificate (interpenetration pairs and share of all pairs, floating share, grounded/supported rate, naming compliance \u2014 all with the validator's thresholds; physics stability was then honestly n/a because no simulation is run — superseded by the static physics audit below), planner + asset-origin + licence disclosure recorded in the certificate, the work bundle and the share card, a pre-export outlook in the export panel (estimated file size under a stated model, VRChat triangle-rank outlook per platform, per-format retention/loss for the current scene), deterministic seeded blueprint variations (layout permutation / curated palette swap), and on-device reference-image palette extraction applied to IR material colours.";
   if (!mathFails.length) auditSummaryText += "\nMathematical frame (2026-11-13) is included in the totals above: scene quality is one number \u2014 the energy E = 3*interpenetrationRate + 2*floatingRate + 2*groundingError + 2*relationViolationRate + 1*outOfBoundsRate, every component a mechanical census with the validator's own thresholds (n/a, with its weight excluded, when nothing can be judged). Validation displays E and its breakdown; the QA certificate states the weights, the breakdown, and the repair descent's before/after E with its full trace. Auto-repair is a steepest descent on E (a move that does not strictly lower E is never taken; the step cap and E >= 0 guarantee termination; a fixed candidate order makes ties deterministic), verified on planted-defect fixtures for strict monotone decrease, convergence to E = 0, an identical IR + trace across two runs, stack grounding in dependency order (a grounded supporter carries what rests on it), and honest non-convergence: a declared support cycle (a on b, b on a) is a validation FAIL, its members are never moved, and the certificate records NOT converged with the residual relations instead of claiming a fix. Declared relations live in ir.relations (the built-in planner emits the on / beside / front / behind relations it resolves; the LLM prompt documents the same field) and are re-evaluated from coordinates. Planner size words are log-scale, verified through the real planner: large x1.5 and small x1/1.5 are exact reciprocals, an explicit 4x is honoured, and 10x clamps at the log-symmetric bound 2^2.";
   if (!physFails.length) auditSummaryText += "\nStatic physics audit (2026-11-13) is included in the totals above: from the IR alone (no dynamic simulation) the product now computes mass (volume x a stated density table — wood 600 / plastic 1200 / glass 2500 / marble 2700 / stone 2400 / metal 7800 kg/m3, inferred from name keywords, transparency or metallic, with a stated 800 kg/m3 product default counted wherever it is used), centre-of-mass projection vs support footprints for tip-over risk (assemblies joined by support interfaces judged by their combined COM; margin normalised by COM height, threshold 0.25), overhang ratios (warning over 0.5), penetration depth in metres for defect pairs, and cumulative loads over the support graph (a supporter thinner than 0.08 m carrying over 3x its own mass is flagged). The instability rate is the energy's 6th component (weight 2, weights stated in the certificate), the descent gains a stabilise move (centre an object over its supporter), and the certificate carries an independent physics section stating thresholds, the density table, per-object masses and the scope that is still NOT computed: dynamic behaviour, friction and material strength.";
+  if (!galFails.length) auditSummaryText += "\nBuilt-in example gallery (2026-11-16) is included in the totals above: " + GALLERY.length + " finished Scene IR blueprints ship inside the app (cafe terrace, reading room, campsite, ancient ruins, observatory, market stalls, lighthouse harbor, greenhouse, snow cabin). Every example is verified to pass IR schema validation, the scene validator with zero fails AND zero warnings, and the scene-energy convergence bar (E <= " + ENERGY_CONVERGED_E + "); each renders a deterministic isometric AABB thumbnail; opening one goes through the same applyProjectData path as loading a project file, so the opened copy is immediately editable, auto-repairable and exportable (a remix), the screen names the example that is open (with an edited marker once the hash moves), unknown keys are refused without touching the scene, and repeated builds are independent copies — the built-in examples themselves never change.";
   if (!anaFails.length) auditSummaryText += "\nAnatomy knowledge model (2026-11-16) is included in the totals above: the scene energy gains a 7th component (anatomy violation rate, weight 2, stated in the certificate) judging mannequin segment proportions against an anatomy knowledge model learned from real images by the stream-processing pipeline in anatomy/ (images are measured in memory and discarded; only aggregate statistics and derived rules survive). Rules reach the energy embedded in the IR (ir.anatomyRules) or via setAnatomyRules(); every rule carries its statistical basis and the model's content hash travels into the certificate. With no model loaded, or no mannequin in the scene, the component is honestly n/a and its weight drops out of E — verified for backward compatibility, for exact violation counting against hand-set fixture rules (the fixtures test the mechanics, not a learned statistic), for determinism, and for schema rejection of a foreign rules version. Joint-angle rules are learned but not yet judged: the IR mannequin carries no pose, so there is no scene quantity to check them against.";
 }
 function injectAuditTab(){
@@ -34282,6 +34346,7 @@ function setGenerating(on){
 function fallbackToLocal(text, reason){
   var res = planFromPrompt(text);
   repairLog = [];
+  galleryOpenInfo = null; galleryOpenHash = "";
   currentIR = ensureGroups(res.ir);
   lastPlanner = { engine: "builtin-fallback", detail: "built-in planner (fallback after a BYO LLM failure)", model: "" };
   stageIdx = 0; renderStages(); refreshAll();
@@ -34338,6 +34403,7 @@ function planWithLLM(text){
     ir.lights = ir.lights || [{type:"ambient",color:"#9099a5",intensity:0.75}];
     ir.camera = ir.camera || { position:[5,3.5,6], target:[0,0.9,0] };
     repairLog = [];
+    galleryOpenInfo = null; galleryOpenHash = "";
     currentIR = ensureGroups(ir);
     lastPlanner = { engine: "byo-llm", detail: "BYO LLM (user-supplied OpenAI-compatible endpoint)", model: model };
     stageIdx = 0; renderStages(); refreshAll();
@@ -35086,6 +35152,445 @@ function startPreset(key){
   if (st) st.scrollIntoView({ behavior:"smooth", block:"start" });
 }
 
+/* ================= Built-in example gallery =================
+   Finished Scene IR blueprints shipped inside the app. Opening one loads a
+   COPY through the same applyProjectData path as a project file, so the
+   example becomes a normal scene the user can edit, auto-repair and export
+   (remix). The built-in examples themselves never change. Every example is
+   required by the self-audit to pass schema validation, the scene validator
+   with zero fails AND zero warnings, and the scene-energy convergence bar. */
+var galleryOpenInfo = null; /* {key} of the example the current scene came from */
+var galleryOpenHash = "";   /* hash of the scene as opened (edit detection) */
+var GALLERY = [
+{ key:"cafe", ja:"カフェテラス", en:"Café Terrace", zh:"咖啡露台", ko:"카페 테라스", es:"Terraza de café",
+  genreJa:"暮らし", genreEn:"Daily life",
+  noteJa:"テーブルの脚・天板まで寸法が合った、すぐ直せるカフェの作例。", noteEn:"A café where every table leg and top lines up — ready to remix.",
+  build: function(){
+    var wood = mat("#8a6844", 0.8, 0, null, 0, pat("planks", 3, "#6f5133"));
+    var cream = mat("#e8dcc4", 0.9, 0);
+    var terra = mat("#b0563a", 0.85, 0);
+    var iron = mat("#3c4148", 0.5, 0.6);
+    var leaf = mat("#4a7a3f", 0.9, 0);
+    var o = [];
+    o.push(obj("cafeFloor","Terrace_Floor","box",[0,-0.06,0],[8,0.12,6],wood,{collider:"box"}));
+    o.push(obj("cafeWall","Cafe_Wall","box",[0,1.5,-2.9],[8,3,0.2],cream));
+    o.push(obj("cafeWinL","Window_Glow_L","box",[-1.9,1.55,-2.76],[1.7,1.5,0.06],mat("#ffd9a0",0.6,0,"#ffb45e",0.5)));
+    o.push(obj("cafeWinR","Window_Glow_R","box",[1.9,1.55,-2.76],[1.7,1.5,0.06],mat("#ffd9a0",0.6,0,"#ffb45e",0.5)));
+    o.push(obj("cafeAwning","Awning","box",[0,2.62,-2.05],[8,0.08,1.7],mat("#b8452f",0.85,0,null,0,pat("stripes",6,"#f3e9d2")),{rotation:[-0.16,0,0]}));
+    function table(tx, tz, pfx){
+      o.push(obj(pfx+"Base","Table_Base","cylinder",[tx,0.045,tz],[0.55,0.09,0.55],iron));
+      o.push(obj(pfx+"Leg","Table_Leg","cylinder",[tx,0.405,tz],[0.08,0.63,0.08],iron));
+      o.push(obj(pfx+"Top","Table_Top","cylinder",[tx,0.745,tz],[1.05,0.05,1.05],mat("#f0e8da",0.5,0)));
+    }
+    table(-1.8, 0.6, "cafeT1"); table(1.6, 0.6, "cafeT2");
+    /* axis-aligned chairs (no Y rotation): the AABB physics audit reads
+       unrotated boxes, so the parts are laid out per facing directly */
+    function chairX(cx, cz, dir, pfx){ /* dir +1: faces +x (back at -x); -1: faces -x */
+      o.push(obj(pfx+"Seat","Chair_Seat","box",[cx,0.45,cz],[0.46,0.05,0.48],terra));
+      o.push(obj(pfx+"LegL","Chair_Leg_L","box",[cx,0.2125,cz-0.18],[0.42,0.425,0.05],iron));
+      o.push(obj(pfx+"LegR","Chair_Leg_R","box",[cx,0.2125,cz+0.18],[0.42,0.425,0.05],iron));
+      o.push(obj(pfx+"Back","Chair_Back","box",[cx-dir*0.21,0.7,cz],[0.04,0.45,0.48],terra));
+    }
+    chairX(-2.75, 0.6, 1, "cafeC1"); chairX(-0.85, 0.6, -1, "cafeC2");
+    chairX(0.65, 0.6, -1, "cafeC3"); chairX(2.55, 0.6, 1, "cafeC4");
+    o.push(obj("cafeCup1","Coffee_Cup","cylinder",[-1.95,0.82,0.45],[0.09,0.1,0.09],mat("#f5f2ea",0.4,0)));
+    o.push(obj("cafeCup2","Coffee_Cup","cylinder",[1.45,0.82,0.75],[0.09,0.1,0.09],mat("#f5f2ea",0.4,0)));
+    o.push(obj("cafeParaBase","Parasol_Base","cylinder",[3.05,0.045,0.6],[0.45,0.09,0.45],iron));
+    o.push(obj("cafePole","Parasol_Pole","cylinder",[3.05,1.215,0.6],[0.06,2.25,0.06],iron));
+    o.push(obj("cafeCanopy","Parasol_Canopy","cone",[3.05,2.565,0.6],[1.8,0.45,1.8],mat("#d96f32",0.85,0)));
+    [-3.3, 3.3].forEach(function(px, i){
+      o.push(obj("cafePlanter"+i,"Planter","box",[px,0.225,-1.6],[1.3,0.45,0.5],mat("#7a4a30",0.9,0)));
+      o.push(obj("cafeShrub"+i,"Shrub","sphere",[px,0.7,-1.6],[0.62,0.5,0.5],leaf));
+      o.push(obj("cafeShrubS"+i,"Shrub_Small","sphere",[px-0.42,0.59,-1.38],[0.32,0.28,0.32],leaf));
+    });
+    o.push(mannequinObj("cafeGuest","Guest_Figure", 2.9, 1.9, 1.7, "#b0563a", 0));
+    return { name:"Café Terrace", objects:o,
+      lights:[{type:"ambient",color:"#8a8f9a",intensity:0.6},{type:"directional",color:"#ffd9a8",intensity:1.2,position:[4,6,3]}],
+      camera:{ position:[5.8,3.6,6.8], target:[0,1.0,-0.4] } };
+  } },
+{ key:"library", ja:"書斎", en:"Reading Room", zh:"书房", ko:"서재", es:"Sala de lectura",
+  genreJa:"インテリア", genreEn:"Interior",
+  noteJa:"段積みの書架とデスクまわり。板と柱の接合で組んだ作例。", noteEn:"Stacked-shelf bookcases and a desk corner, joined board-on-post.",
+  build: function(){
+    var wood = mat("#6b4e33", 0.8, 0);
+    var dark = mat("#4a3421", 0.85, 0);
+    var o = [];
+    o.push(obj("libFloor","Library_Floor","box",[0,-0.06,0],[7,0.12,5.6],mat("#7d5c39",0.85,0,null,0,pat("planks",4,"#66482a")),{collider:"box"}));
+    o.push(obj("libRug","Rug","plane",[0,0.006,0.3],[3.6,0,2.6],mat("#7a3038",0.95,0,null,0,pat("checker",6,"#5e242b"))));
+    function shelf(x0, pfx){
+      [0,1,2].forEach(function(lv){
+        var y0 = lv * 0.69;
+        o.push(obj(pfx+"PostL"+lv,"Shelf_Post","box",[x0-0.95,y0+0.3,-2.3],[0.34,0.6,0.36],dark));
+        o.push(obj(pfx+"PostR"+lv,"Shelf_Post","box",[x0+0.95,y0+0.3,-2.3],[0.34,0.6,0.36],dark));
+        o.push(obj(pfx+"Board"+lv,"Shelf_Board","box",[x0,y0+0.645,-2.3],[2.3,0.09,0.38],wood));
+      });
+      o.push(obj(pfx+"BooksA","Book_Row","box",[x0-0.15,0.89,-2.3],[1.3,0.4,0.26],mat("#8a4a3a",0.8,0,null,0,pat("stripes",9,"#3f5a78"))));
+      o.push(obj(pfx+"BooksB","Book_Row","box",[x0+0.2,1.58,-2.3],[1.1,0.4,0.26],mat("#3f5a78",0.8,0,null,0,pat("stripes",7,"#8a4a3a"))));
+      o.push(obj(pfx+"Stack","Book_Stack","box",[x0-0.5,2.15,-2.3],[0.5,0.16,0.3],mat("#5a6e46",0.8,0)));
+    }
+    shelf(-1.75, "libS1"); shelf(0.85, "libS2");
+    o.push(obj("libDeskTop","Desk_Top","box",[2.45,0.755,0.8],[1.9,0.07,0.95],wood));
+    o.push(obj("libDeskLegL","Desk_Leg","box",[1.6,0.36,0.8],[0.07,0.72,0.85],dark));
+    o.push(obj("libDeskLegR","Desk_Leg","box",[3.3,0.36,0.8],[0.07,0.72,0.85],dark));
+    o.push(obj("libBook1","Book","box",[2.9,0.825,0.7],[0.42,0.07,0.3],mat("#8a4a3a",0.8,0)));
+    o.push(obj("libBook2","Book","box",[2.9,0.89,0.7],[0.36,0.06,0.26],mat("#3f5a78",0.8,0)));
+    o.push(obj("libLampBase","Lamp_Base","cylinder",[1.85,0.81,0.95],[0.2,0.04,0.2],mat("#2f3338",0.45,0.7)));
+    o.push(obj("libLampStem","Lamp_Stem","cylinder",[1.85,1.03,0.95],[0.04,0.4,0.04],mat("#2f3338",0.45,0.7)));
+    o.push(obj("libLampShade","Lamp_Shade","cone",[1.85,1.34,0.95],[0.3,0.22,0.3],mat("#e8c88a",0.8,0,"#ffca7a",0.7),{light:{color:"#ffca7a",intensity:1.2,distance:5}}));
+    o.push(obj("libGlobeStand","Globe_Stand","box",[2.75,0.25,-1.5],[0.3,0.5,0.3],dark));
+    o.push(obj("libGlobe","Globe","sphere",[2.75,0.775,-1.5],[0.55,0.55,0.55],mat("#3f6ea5",0.6,0)));
+    (function(){
+      var fab = mat("#5e4a68", 0.95, 0);
+      o.push(obj("libArmBase","Armchair_Base","box",[-2.2,0.175,1.3],[0.85,0.35,0.8],fab));
+      o.push(obj("libArmBack","Armchair_Back","box",[-2.2,0.725,1.0],[0.85,0.75,0.2],fab));
+      o.push(obj("libArmL","Armchair_Arm","box",[-2.535,0.475,1.38],[0.18,0.25,0.7],fab));
+      o.push(obj("libArmR","Armchair_Arm","box",[-1.865,0.475,1.38],[0.18,0.25,0.7],fab));
+    })();
+    return { name:"Reading Room", objects:o,
+      lights:[{type:"ambient",color:"#7a7268",intensity:0.55},{type:"directional",color:"#ffe0b0",intensity:1.0,position:[3,5,4]}],
+      camera:{ position:[5.2,3.2,5.6], target:[0,1.0,-0.6] } };
+  } },
+{ key:"camp", ja:"キャンプサイト", en:"Campsite", zh:"露营地", ko:"캠프사이트", es:"Campamento",
+  genreJa:"アウトドア", genreEn:"Outdoors",
+  noteJa:"Aフレームテントと焚き火。炎は焚き火の上に寸法どおり載っている。", noteEn:"An A-frame tent and campfire — the flame sits exactly on the fire.",
+  build: function(){
+    var o = [];
+    o.push(obj("campGround","Meadow_Ground","box",[0,-0.2,0],[13,0.4,11],mat("#5d7d43",0.95,0),{collider:"box"}));
+    o.push(obj("campTentL","Tent_Panel","box",[-2.92,0.95,-1.2],[0.09,2.6,2.4],mat("#c96f2e",0.9,0),{rotation:[0,0,-0.62]}));
+    o.push(obj("campTentR","Tent_Panel","box",[-1.48,0.95,-1.2],[0.09,2.6,2.4],mat("#c96f2e",0.9,0),{rotation:[0,0,0.62]}));
+    o.push(obj("campTentBack","Tent_Back","box",[-2.2,0.65,-2.3],[1.9,1.3,0.09],mat("#a85a24",0.9,0)));
+    o.push(obj("campMat","Ground_Mat","plane",[-2.2,0.006,-1.2],[2.6,0,2.2],mat("#7a4a30",0.95,0,null,0,pat("checker",5,"#66402a"))));
+    o.push(obj("campPit","Fire_Pit","cylinder",[1.2,0.11,0.8],[1.0,0.22,1.0],mat("#6e6a63",0.95,0)));
+    [0, 1.05, 2.1].forEach(function(a, i){
+      o.push(obj("campLog"+i,"Firewood_Log","box",[1.2,0.29,0.8],[0.7,0.14,0.16],mat("#6e4f30",0.95,0),{rotation:[0,a,0]}));
+    });
+    o.push(obj("campFlame","Camp_Flame","cone",[1.2,0.66,0.8],[0.45,0.6,0.45],mat("#ff9a3c",0.7,0,"#ff7a1e",1.4),
+      {light:{color:"#ff9a4c",intensity:2,distance:7},animation:{type:"pulse",amplitude:0.12,periodSec:1.6}}));
+    o.push(obj("campBench1","Log_Bench","box",[1.2,0.18,2.2],[1.5,0.36,0.42],mat("#7d5c39",0.95,0)));
+    o.push(obj("campBench2","Log_Bench","box",[2.9,0.18,0.2],[1.5,0.36,0.42],mat("#7d5c39",0.95,0),{rotation:[0,1.2,0]}));
+    [[4.6,-2.6],[-4.8,2.4],[0.5,-4.2]].forEach(function(tp, i){
+      o.push(obj("campPine"+i+"T","Pine_Trunk","cylinder",[tp[0],0.85,tp[1]],[0.26,1.7,0.26],mat("#5e4630",0.95,0)));
+      o.push(obj("campPine"+i+"A","Pine_Cone","cone",[tp[0],2.45,tp[1]],[1.6,1.5,1.6],mat("#3d6034",0.95,0)));
+      o.push(obj("campPine"+i+"B","Pine_Cone","cone",[tp[0],3.8,tp[1]],[1.15,1.2,1.15],mat("#47703c",0.95,0)));
+    });
+    o.push(obj("campPack1","Backpack","box",[0.2,0.3,1.9],[0.45,0.6,0.3],mat("#a03c30",0.9,0),{rotation:[0,0.4,0]}));
+    o.push(obj("campPack1F","Backpack_Flap","box",[0.2,0.7,1.9],[0.4,0.2,0.28],mat("#843026",0.9,0),{rotation:[0,0.4,0]}));
+    o.push(obj("campPack2","Backpack","box",[-0.45,0.3,2.05],[0.45,0.6,0.3],mat("#3f5a78",0.9,0),{rotation:[0,-0.3,0]}));
+    o.push(obj("campPack2F","Backpack_Flap","box",[-0.45,0.7,2.05],[0.4,0.2,0.28],mat("#334a63",0.9,0),{rotation:[0,-0.3,0]}));
+    o.push(obj("campStump","Stump","cylinder",[-0.6,0.25,2.6],[0.42,0.5,0.42],mat("#7d5c39",0.95,0)));
+    o.push(obj("campLantern","Lantern","box",[-0.6,0.63,2.6],[0.2,0.26,0.2],mat("#ffd9a0",0.6,0,"#ffbf5e",0.9),{light:{color:"#ffc46a",intensity:1.2,distance:5}}));
+    o.push(obj("campRock1","Rock","sphere",[3.4,0.22,-0.6],[0.8,0.44,0.7],mat("#7a766e",0.95,0)));
+    o.push(obj("campRock2","Rock","sphere",[-3.8,0.18,0.6],[0.6,0.36,0.55],mat("#7a766e",0.95,0)));
+    o.push(obj("campRock3","Rock","sphere",[5.2,0.15,2.8],[0.5,0.3,0.45],mat("#86827a",0.95,0)));
+    return { name:"Campsite", objects:o,
+      lights:[{type:"ambient",color:"#5a6a8a",intensity:0.55},{type:"directional",color:"#cfd8ee",intensity:0.8,position:[-4,7,2]}],
+      camera:{ position:[7.5,4.5,8], target:[0,0.8,0] } };
+  } },
+{ key:"ruins", ja:"古代遺跡", en:"Ancient Ruins", zh:"古代遗迹", ko:"고대 유적", es:"Ruinas antiguas",
+  genreJa:"遺跡・歴史", genreEn:"Ruins & history",
+  noteJa:"3段の基壇と梁まで残る柱列。倒れた柱も地面に正しく横たわる。", noteEn:"A three-step platform and a colonnade with its beam — the fallen pillar lies true.",
+  build: function(){
+    var stone = mat("#b3a58c", 0.95, 0);
+    var stoneD = mat("#998a6e", 0.95, 0);
+    var o = [];
+    o.push(obj("ruinGround","Ruins_Ground","box",[0,-0.1,0],[15,0.2,11],mat("#9a8f66",0.98,0),{collider:"box"}));
+    o.push(obj("ruinStep1","Ruins_Floor_Low","box",[0,0.125,0],[7.5,0.25,5.5],stone));
+    o.push(obj("ruinStep2","Ruins_Floor_Mid","box",[0,0.375,0],[6.5,0.25,4.5],stone));
+    o.push(obj("ruinStep3","Ruins_Floor_Top","box",[0,0.625,0],[5.5,0.25,3.6],stone));
+    [-1.6, 1.6].forEach(function(px, i){
+      o.push(obj("ruinPillar"+i,"Pillar","cylinder",[px,2.05,-0.9],[0.65,2.6,0.65],stone));
+      o.push(obj("ruinCap"+i,"Capital","box",[px,3.475,-0.9],[0.75,0.25,0.75],stoneD));
+    });
+    o.push(obj("ruinBeam","Architrave_Beam","box",[0,3.775,-0.9],[4.3,0.35,0.75],stoneD));
+    o.push(obj("ruinBroken","Broken_Pillar","cylinder",[2.3,1.325,0.9],[0.65,1.15,0.65],stone));
+    o.push(obj("ruinFallenCap","Fallen_Capital","box",[-4.4,0.125,1.9],[0.8,0.25,0.8],stoneD,{rotation:[0,0.5,0]}));
+    o.push(obj("ruinBase","Pillar_Base","box",[-2.3,0.9,0.9],[0.85,0.3,0.85],stoneD));
+    o.push(obj("ruinFallen","Fallen_Pillar","cylinder",[4.9,0.28,1.6],[0.55,2.3,0.55],stone,{rotation:[0,0,Math.PI/2]}));
+    o.push(obj("ruinAltar","Altar","box",[0,1.15,0.9],[1.5,0.8,0.95],stoneD));
+    o.push(obj("ruinBowl","Offering_Bowl","cylinder",[0,1.65,0.9],[0.55,0.2,0.55],mat("#5e5648",0.8,0.3)));
+    o.push(obj("ruinGem","Relic_Gem","sphere",[0,1.87,0.9],[0.24,0.24,0.24],mat("#39d0c4",0.3,0,"#2ae0d0",1.2),{light:{color:"#2ae0d0",intensity:1.2,distance:5}}));
+    o.push(obj("ruinRubble1","Rubble","box",[2.2,0.9,-1.5],[0.4,0.3,0.35],stoneD,{rotation:[0,0.4,0]}));
+    o.push(obj("ruinRubble2","Rubble","box",[-4.35,0.15,-1.9],[0.4,0.3,0.35],stoneD,{rotation:[0,-0.7,0]}));
+    o.push(obj("ruinRubble3","Rubble","sphere",[-4.2,0.2,2.9],[0.5,0.4,0.45],stoneD));
+    o.push(obj("ruinRubble4","Rubble","box",[-1.2,0.9,1.4],[0.35,0.3,0.3],stoneD,{rotation:[0,0.9,0]}));
+    return { name:"Ancient Ruins", objects:o,
+      lights:[{type:"ambient",color:"#8a8474",intensity:0.6},{type:"directional",color:"#ffedc4",intensity:1.3,position:[6,8,3]}],
+      camera:{ position:[7.8,4.6,8.6], target:[0,1.2,0] } };
+  } },
+{ key:"observatory", ja:"天文観測ドーム", en:"Observatory", zh:"天文观测台", ko:"천문 관측 돔", es:"Observatorio",
+  genreJa:"科学", genreEn:"Science",
+  noteJa:"ドーム球は壁の上に下端で接し、望遠鏡は台の上に寸法どおり載る。", noteEn:"The dome meets the wall at its rim; the telescope sits true on its mount.",
+  build: function(){
+    var o = [];
+    o.push(obj("obsGround","Observatory_Ground","box",[0,-0.05,0],[24,0.1,24],mat("#232830",0.98,0),{collider:"box"}));
+    o.push(obj("obsPlatform","Platform","cylinder",[0,0.15,0],[9.5,0.3,9.5],mat("#4a4f58",0.9,0)));
+    o.push(obj("obsWall","Dome_Wall","cylinder",[0,1.15,0],[5.6,1.7,5.6],mat("#9aa2ae",0.6,0.4)));
+    o.push(obj("obsDome","Dome","sphere",[0,3.5,0],[5.9,3.0,5.9],mat("#c8ccd4",0.45,0.6),{group:"Architecture"}));
+    o.push(obj("obsMount","Telescope_Mount","box",[0,0.775,0.3],[0.55,0.95,0.55],mat("#33383f",0.5,0.6)));
+    o.push(obj("obsTube","Telescope_Tube","cylinder",[0,1.6,0.3],[0.36,0.7,0.36],mat("#e8ecf2",0.35,0.5),{rotation:[0.65,0,0]}));
+    o.push(obj("obsDeskLegL","Desk_Leg","box",[1.3,0.6,-1.4],[0.06,0.6,0.6],mat("#33383f",0.5,0.6)));
+    o.push(obj("obsDeskLegR","Desk_Leg","box",[2.6,0.6,-1.4],[0.06,0.6,0.6],mat("#33383f",0.5,0.6)));
+    o.push(obj("obsDeskTop","Desk_Top","box",[1.95,0.935,-1.4],[1.5,0.07,0.7],mat("#565e68",0.6,0.3)));
+    o.push(obj("obsMonitor","Monitor_Screen","box",[1.95,1.195,-1.55],[0.7,0.45,0.05],mat("#9fd8ff",0.4,0,"#6fc4ff",0.8)));
+    o.push(obj("obsKeyboard","Keyboard","box",[1.95,0.985,-1.25],[0.5,0.03,0.18],mat("#22262c",0.6,0.2)));
+    o.push(obj("obsStoolLeg","Stool_Leg","cylinder",[1.95,0.55,0.1],[0.06,0.5,0.06],mat("#33383f",0.5,0.6)));
+    o.push(obj("obsStoolSeat","Stool_Seat","cylinder",[1.95,0.84,0.1],[0.4,0.08,0.4],mat("#7a4a30",0.8,0)));
+    o.push(obj("obsLampPole","Lamp_Pole","cylinder",[-2.4,0.96,-0.8],[0.05,1.32,0.05],mat("#33383f",0.5,0.6)));
+    o.push(obj("obsLampOrb","Star_Lamp","sphere",[-2.4,1.73,-0.8],[0.22,0.22,0.22],mat("#ffe9b0",0.5,0,"#ffd76a",1.1),{light:{color:"#ffd76a",intensity:1.2,distance:6}}));
+    o.push(obj("obsCrate1","Crate","box",[3.4,0.6,1.8],[0.6,0.6,0.6],mat("#6e5638",0.9,0)));
+    o.push(obj("obsCrate2","Crate","box",[3.4,1.125,1.8],[0.45,0.45,0.45],mat("#7d6240",0.9,0),{rotation:[0,0.3,0]}));
+    [[5.8,2.5],[-5.2,3.8]].forEach(function(pp, i){
+      o.push(obj("obsPath"+i+"P","Path_Lamp_Pole","cylinder",[pp[0],0.4,pp[1]],[0.06,0.8,0.06],mat("#33383f",0.5,0.6)));
+      o.push(obj("obsPath"+i+"O","Path_Lamp","sphere",[pp[0],0.9,pp[1]],[0.2,0.2,0.2],mat("#cfe4ff",0.5,0,"#a8ccff",0.9)));
+    });
+    return { name:"Observatory", objects:o,
+      lights:[{type:"ambient",color:"#4a5a7a",intensity:0.5},{type:"directional",color:"#b8ccf0",intensity:0.7,position:[-5,8,4]}],
+      camera:{ position:[8.6,4.8,9.4], target:[0,1.6,0] } };
+  } },
+{ key:"market", ja:"市場の屋台", en:"Market Stalls", zh:"市场摊位", ko:"시장 노점", es:"Puestos de mercado",
+  genreJa:"街・商い", genreEn:"Town & trade",
+  noteJa:"屋台2軒と果物の木箱。看板は柱に、屋根は柱の上に載っている。", noteEn:"Two stalls with fruit crates — signs on the posts, canopies on the post tops.",
+  build: function(){
+    var o = [];
+    o.push(obj("mktGround","Market_Ground","box",[0,-0.075,0],[12,0.15,9],mat("#8d8578",0.95,0,null,0,pat("grid",8,"#776f61")),{collider:"box"}));
+    function stall(x0, pfx, canopyCol, canopyB){
+      var post = mat("#6e4f30", 0.9, 0);
+      [[-1.25,-0.75],[1.25,-0.75],[-1.25,0.75],[1.25,0.75]].forEach(function(d, i){
+        o.push(obj(pfx+"Post"+i,"Stall_Pillar","box",[x0+d[0],1.1,-1.2+d[1]],[0.1,2.2,0.1],post));
+      });
+      o.push(obj(pfx+"SupL","Counter_Support","box",[x0-1.05,0.43,-1.2],[0.14,0.86,1.1],post));
+      o.push(obj(pfx+"SupR","Counter_Support","box",[x0+1.05,0.43,-1.2],[0.14,0.86,1.1],post));
+      o.push(obj(pfx+"Counter","Counter","box",[x0,0.91,-1.2],[2.7,0.1,1.2],mat("#8a6844",0.85,0)));
+      o.push(obj(pfx+"Canopy","Canopy","box",[x0,2.245,-1.2],[3.1,0.07,2.0],mat(canopyCol,0.9,0,null,0,pat("stripes",7,canopyB)),{rotation:[0.1,0,0]}));
+      o.push(obj(pfx+"Sign","Sign_Board","box",[x0,1.86,-0.42],[2.7,0.42,0.05],mat("#e8dcc4",0.85,0)));
+      o.push(obj(pfx+"Crate1","Fruit_Crate","box",[x0-0.7,1.08,-1.2],[0.75,0.24,0.55],mat("#9a7448",0.9,0)));
+      [-0.2, 0, 0.2].forEach(function(dx, i){
+        o.push(obj(pfx+"Fruit"+i,"Fruit","sphere",[x0-0.7+dx,1.285,-1.2],[0.17,0.17,0.17],mat(i===1 ? "#d94f30" : "#e8a33c",0.6,0)));
+      });
+      o.push(obj(pfx+"Crate2","Goods_Crate","box",[x0+0.75,1.06,-1.2],[0.6,0.2,0.5],mat("#9a7448",0.9,0)));
+      o.push(obj(pfx+"Goods","Goods_Box","box",[x0+0.75,1.23,-1.2],[0.4,0.14,0.24],mat("#c9a86a",0.85,0)));
+      o.push(obj(pfx+"Lantern","Lantern","box",[x0+1.15,1.07,-0.75],[0.16,0.22,0.16],mat("#ffd9a0",0.6,0,"#ffbf5e",0.9),{light:{color:"#ffc46a",intensity:1.0,distance:5}}));
+    }
+    stall(-2.6, "mktS1", "#b8452f", "#f3e9d2");
+    stall(2.4, "mktS2", "#2f6e5e", "#f3e9d2");
+    o.push(obj("mktBarrel1","Barrel","cylinder",[0,0.425,-0.2],[0.55,0.85,0.55],mat("#7a5a38",0.9,0)));
+    o.push(obj("mktBarrel2","Barrel","cylinder",[0.65,0.425,0.5],[0.55,0.85,0.55],mat("#7a5a38",0.9,0)));
+    o.push(mannequinObj("mktShopper","Shopper_Figure", 0.3, 2.2, 1.65, "#3f5a78", 0));
+    return { name:"Market Stalls", objects:o,
+      lights:[{type:"ambient",color:"#8a8474",intensity:0.6},{type:"directional",color:"#ffedc4",intensity:1.25,position:[5,7,4]}],
+      camera:{ position:[6.4,3.8,7.6], target:[0,1.0,-0.6] } };
+  } },
+{ key:"lighthouse", ja:"灯台と港", en:"Lighthouse Harbor", zh:"灯塔与港口", ko:"등대와 항구", es:"Faro y puerto",
+  genreJa:"海・港", genreEn:"Sea & harbor",
+  noteJa:"岩島の上に段積みの灯台、桟橋と小舟。光はランプ室から届く。", noteEn:"A stacked lighthouse on a rock island, with a dock and a small boat.",
+  build: function(){
+    var o = [];
+    o.push(obj("lhWater","Sea","plane",[0,-0.35,0],[34,0,34],mat("#2e5f7a",0.35,0.1)));
+    o.push(obj("lhIsland","Island","cylinder",[0,-0.2,0],[5.2,0.8,5.2],mat("#6e6a63",0.98,0)));
+    o.push(obj("lhBase","Lighthouse_Base","cylinder",[0,0.45,0],[2.0,0.5,2.0],mat("#8d8578",0.9,0)));
+    o.push(obj("lhTowerLo","Lighthouse_Tower","cylinder",[0,1.55,0],[1.5,1.7,1.5],mat("#f0ead8",0.7,0)));
+    o.push(obj("lhTowerHi","Lighthouse_Tower","cylinder",[0,3.25,0],[1.5,1.7,1.5],mat("#c23b2a",0.7,0)));
+    o.push(obj("lhDeck","Lamp_Deck","cylinder",[0,4.19,0],[2.05,0.18,2.05],mat("#3c4148",0.5,0.6)));
+    o.push(obj("lhLampRoom","Lamp_Room","cylinder",[0,4.73,0],[1.15,0.9,1.15],mat("#ffd76a",0.35,0,"#ffbe3c",1.2),{light:{color:"#ffcf5e",intensity:3,distance:20}}));
+    o.push(obj("lhRoof","Lamp_Roof","cone",[0,5.605,0],[1.55,0.85,1.55],mat("#8e2f22",0.8,0)));
+    o.push(obj("lhDock","Dock","box",[4.9,0.02,1.8],[4.6,0.16,1.5],mat("#7d5c39",0.9,0,null,0,pat("planks",5,"#66482a")),{rotation:[0,-0.25,0]}));
+    o.push(obj("lhDockPost1","Dock_Post","cylinder",[6.6,-0.4,1.2],[0.15,1.0,0.15],mat("#5e4630",0.95,0)));
+    o.push(obj("lhDockPost2","Dock_Post","cylinder",[6.6,-0.4,2.4],[0.15,1.0,0.15],mat("#5e4630",0.95,0)));
+    o.push(obj("lhHull","Boat_Hull","box",[7.6,-0.12,4.6],[2.3,0.55,0.95],mat("#a03c30",0.8,0)));
+    o.push(obj("lhMast","Boat_Mast","cylinder",[7.6,1.1,4.6],[0.07,1.9,0.07],mat("#6e4f30",0.9,0)));
+    o.push(obj("lhSail","Sail","box",[7.95,0.725,4.6],[0.05,1.15,0.85],mat("#f3e9d2",0.9,0)));
+    o.push(obj("lhBuoy1","Buoy","sphere",[3.4,-0.18,5.2],[0.5,0.5,0.5],mat("#d94f30",0.6,0)));
+    o.push(obj("lhBuoy2","Buoy","sphere",[-4.6,-0.18,3.4],[0.5,0.5,0.5],mat("#e8a33c",0.6,0)));
+    o.push(obj("lhCrate1","Crate","box",[3.6,0.375,1.6],[0.55,0.55,0.55],mat("#8a6844",0.9,0)));
+    o.push(obj("lhCrate2","Crate","box",[3.6,0.875,1.6],[0.4,0.4,0.4],mat("#9a7448",0.9,0),{rotation:[0,0.35,0]}));
+    return { name:"Lighthouse Harbor", objects:o,
+      lights:[{type:"ambient",color:"#546a8a",intensity:0.55},{type:"directional",color:"#ffb37a",intensity:0.9,position:[-6,4,5]}],
+      camera:{ position:[10.5,5.2,11.5], target:[0,2.2,0] } };
+  } },
+{ key:"greenhouse", ja:"温室", en:"Greenhouse", zh:"温室", ko:"온실", es:"Invernadero",
+  genreJa:"植物", genreEn:"Plants",
+  noteJa:"ガラス壁と屋根は梁と柱で支えられる。鉢はテーブルの上に寸法どおり。", noteEn:"Glass walls and roof carried by beams and posts; pots sit true on the tables.",
+  build: function(){
+    var glass = mat("#bfe3ea", 0.15, 0, null, 0, null, 0.35);
+    var frame = mat("#3f5a46", 0.6, 0.3);
+    var o = [];
+    o.push(obj("ghFloor","Greenhouse_Floor","box",[0,-0.06,0],[7.9,0.12,5.2],mat("#9a917e",0.95,0,null,0,pat("grid",7,"#877f6c")),{collider:"box"}));
+    o.push(obj("ghSillF","Wall_Sill","box",[0,0.15,2.3],[7.5,0.3,0.1],frame));
+    o.push(obj("ghSillB","Wall_Sill","box",[0,0.15,-2.3],[7.5,0.3,0.1],frame));
+    o.push(obj("ghSillL","Wall_Sill","box",[-3.7,0.15,0],[0.1,0.3,4.8],frame));
+    o.push(obj("ghSillR","Wall_Sill","box",[3.7,0.15,0],[0.1,0.3,4.8],frame));
+    o.push(obj("ghGlassF","Glass_Wall","box",[0,1.15,2.3],[7.5,1.7,0.05],glass));
+    o.push(obj("ghGlassB","Glass_Wall","box",[0,1.15,-2.3],[7.5,1.7,0.05],glass));
+    o.push(obj("ghGlassL","Glass_Wall","box",[-3.7,1.15,0],[0.05,1.7,4.8],glass));
+    o.push(obj("ghGlassR","Glass_Wall","box",[3.7,1.15,0],[0.05,1.7,4.8],glass));
+    [[-3.78,-2.38],[3.78,-2.38],[-3.78,2.38],[3.78,2.38]].forEach(function(cp, i){
+      o.push(obj("ghPost"+i,"Frame_Pillar","box",[cp[0],1.15,cp[1]],[0.1,2.3,0.1],frame));
+    });
+    o.push(obj("ghBeamF","Roof_Beam","box",[0,2.06,2.3],[7.5,0.12,0.14],frame));
+    o.push(obj("ghBeamB","Roof_Beam","box",[0,2.06,-2.3],[7.5,0.12,0.14],frame));
+    o.push(obj("ghBeamL","Roof_Beam","box",[-3.7,2.06,0],[0.14,0.12,4.8],frame));
+    o.push(obj("ghBeamR","Roof_Beam","box",[3.7,2.06,0],[0.14,0.12,4.8],frame));
+    o.push(obj("ghRidgePostL","Ridge_Pillar","box",[-3.7,2.45,0],[0.12,0.9,0.12],frame));
+    o.push(obj("ghRidgePostR","Ridge_Pillar","box",[3.7,2.45,0],[0.12,0.9,0.12],frame));
+    o.push(obj("ghRidge","Ridge_Beam","box",[0,2.79,0],[7.5,0.14,0.14],frame));
+    o.push(obj("ghRoofF","Roof_Panel","box",[0,2.75,1.15],[7.5,0.05,2.3],glass,{rotation:[0.5,0,0]}));
+    o.push(obj("ghRoofB","Roof_Panel","box",[0,2.75,-1.15],[7.5,0.05,2.3],glass,{rotation:[-0.5,0,0]}));
+    [-1.2, 1.2].forEach(function(tz, ti){
+      var pfx = "ghT" + ti;
+      o.push(obj(pfx+"Top","Plant_Table","box",[0,0.845,tz],[2.8,0.07,0.95],mat("#7d6240",0.85,0)));
+      o.push(obj(pfx+"LegL","Table_Leg","box",[-1.3,0.405,tz],[0.08,0.81,0.85],mat("#6e5638",0.85,0)));
+      o.push(obj(pfx+"LegR","Table_Leg","box",[1.3,0.405,tz],[0.08,0.81,0.85],mat("#6e5638",0.85,0)));
+      [-0.9, 0, 0.9].forEach(function(px, pi){
+        o.push(obj(pfx+"Pot"+pi,"Plant_Pot","cylinder",[px,1.005,tz],[0.27,0.25,0.27],mat("#a85a38",0.9,0)));
+        o.push(obj(pfx+"Leaf"+pi,"Foliage","sphere",[px,1.32,tz],[0.42,0.38,0.42],mat("#4a7a3f",0.9,0)));
+      });
+    });
+    o.push(obj("ghTreePot","Tree_Pot","cylinder",[0,0.275,0],[0.7,0.55,0.7],mat("#8a4a30",0.9,0)));
+    o.push(obj("ghTreeTrunk","Tree_Trunk","cylinder",[0,1.0,0],[0.14,0.9,0.14],mat("#5e4630",0.95,0)));
+    o.push(obj("ghTreeCrown1","Tree_Crown","sphere",[0,1.9,0],[1.1,0.9,1.1],mat("#527f42",0.9,0)));
+    o.push(obj("ghTreeCrown2","Tree_Crown","sphere",[0.15,2.7,0.1],[0.8,0.7,0.8],mat("#5d8a4a",0.9,0)));
+    o.push(obj("ghStone1","Stepping_Stone","box",[-1.7,0.025,0],[0.7,0.05,0.7],mat("#8d8578",0.95,0)));
+    o.push(obj("ghStone2","Stepping_Stone","box",[1.7,0.025,0],[0.7,0.05,0.7],mat("#8d8578",0.95,0)));
+    o.push(obj("ghCan","Watering_Can","box",[2.9,0.13,1.9],[0.34,0.26,0.22],mat("#b0563a",0.5,0.5)));
+    return { name:"Greenhouse", objects:o,
+      lights:[{type:"ambient",color:"#a8b39a",intensity:0.75},{type:"directional",color:"#fff2cf",intensity:1.3,position:[4,8,3]}],
+      camera:{ position:[6.8,4.2,7.4], target:[0,1.1,0] } };
+  } },
+{ key:"snowcabin", ja:"雪山の山小屋", en:"Snow Cabin", zh:"雪山小屋", ko:"눈 산장", es:"Cabaña de nieve",
+  genreJa:"雪・山", genreEn:"Snow & mountains",
+  noteJa:"雪をかぶった屋根と煙突の煙。薪は小屋の脇に積んである。", noteEn:"A snow-capped roof and chimney smoke, with firewood stacked by the wall.",
+  build: function(){
+    var log = mat("#6e4f30", 0.9, 0);
+    var logD = mat("#5e4228", 0.9, 0);
+    var o = [];
+    o.push(obj("snGround","Snow_Ground","box",[0,-0.15,0],[13,0.3,11],mat("#eef2f5",0.95,0),{collider:"box"}));
+    o.push(obj("snFloor","Cabin_Floor","box",[0,0.125,0],[4.8,0.25,3.8],logD));
+    o.push(obj("snWallF","Cabin_Wall","box",[0,1.2,1.81],[4.8,1.9,0.18],log));
+    o.push(obj("snWallB","Cabin_Wall","box",[0,1.2,-1.81],[4.8,1.9,0.18],log));
+    o.push(obj("snWallL","Cabin_Wall","box",[-2.31,1.2,0],[0.18,1.9,3.8],log));
+    o.push(obj("snWallR","Cabin_Wall","box",[2.31,1.2,0],[0.18,1.9,3.8],log));
+    o.push(obj("snDoor","Door","box",[0.9,0.975,2.06],[0.85,1.45,0.07],mat("#4a3421",0.85,0)));
+    o.push(obj("snStep","Step_Stone","box",[0.9,0.125,2.1],[1.1,0.25,0.55],mat("#8d8578",0.95,0)));
+    o.push(obj("snWinF","Window_Glow","box",[-1.2,1.45,1.93],[0.7,0.7,0.06],mat("#ffd9a0",0.6,0,"#ffb45e",0.8)));
+    o.push(obj("snWinL","Window_Glow","box",[-2.43,1.45,0.4],[0.06,0.7,0.7],mat("#ffd9a0",0.6,0,"#ffb45e",0.8)));
+    o.push(obj("snGableF","Gable_Wall","box",[0,2.525,1.81],[4.8,0.75,0.18],logD));
+    o.push(obj("snGableB","Gable_Wall","box",[0,2.525,-1.81],[4.8,0.75,0.18],logD));
+    o.push(obj("snRoofF","Roof_Panel","box",[0,2.82,1.175],[5.4,0.12,2.35],mat("#7a3b2a",0.85,0),{rotation:[0.5,0,0]}));
+    o.push(obj("snRoofB","Roof_Panel","box",[0,2.82,-1.175],[5.4,0.12,2.35],mat("#7a3b2a",0.85,0),{rotation:[-0.5,0,0]}));
+    o.push(obj("snSnowF","Snow_Cap","box",[0,2.955,1.175],[5.4,0.07,2.35],mat("#f7fafc",0.95,0),{rotation:[0.5,0,0]}));
+    o.push(obj("snSnowB","Snow_Cap","box",[0,2.955,-1.175],[5.4,0.07,2.35],mat("#f7fafc",0.95,0),{rotation:[-0.5,0,0]}));
+    o.push(obj("snChimney","Chimney","box",[1.5,3.45,0.6],[0.5,1.2,0.5],mat("#8d8578",0.9,0)));
+    o.push(obj("snSmoke1","Smoke","sphere",[1.5,4.26,0.6],[0.42,0.42,0.42],mat("#cfd8e2",0.7,0,null,0,null,0.45)));
+    o.push(obj("snSmoke2","Smoke","sphere",[1.62,4.79,0.66],[0.55,0.55,0.55],mat("#dde5ee",0.7,0,null,0,null,0.35)));
+    [1.15, 1.36, 1.57].forEach(function(wz, i){
+      o.push(obj("snWoodA"+i,"Firewood_Log","box",[3.3,0.085,wz],[0.95,0.17,0.18],log));
+    });
+    [1.25, 1.47].forEach(function(wz, i){
+      o.push(obj("snWoodB"+i,"Firewood_Log","box",[3.3,0.255,wz],[0.95,0.17,0.18],logD));
+    });
+    [[-4.2,-2.2],[4.6,-3.0],[-3.6,3.4]].forEach(function(tp, i){
+      o.push(obj("snPine"+i+"T","Pine_Trunk","cylinder",[tp[0],0.7,tp[1]],[0.24,1.4,0.24],logD));
+      o.push(obj("snPine"+i+"A","Pine_Cone","cone",[tp[0],2.1,tp[1]],[1.5,1.4,1.5],mat("#3d6034",0.95,0)));
+      o.push(obj("snPine"+i+"B","Pine_Cone","cone",[tp[0],3.375,tp[1]],[1.05,1.15,1.05],mat("#47703c",0.95,0)));
+      o.push(obj("snPine"+i+"S","Snow_Cone","cone",[tp[0],4.225,tp[1]],[0.6,0.55,0.6],mat("#f7fafc",0.95,0)));
+    });
+    o.push(obj("snLampPost","Lamp_Post","box",[1.9,0.65,2.6],[0.09,1.3,0.09],logD));
+    o.push(obj("snLamp","Lantern","box",[1.9,1.45,2.6],[0.24,0.3,0.24],mat("#ffd9a0",0.6,0,"#ffbf5e",0.9),{light:{color:"#ffc46a",intensity:1.2,distance:6}}));
+    o.push(obj("snFenceP1","Fence_Post","box",[-2.2,0.425,3.4],[0.09,0.85,0.09],logD));
+    o.push(obj("snFenceP2","Fence_Post","box",[-0.6,0.425,3.4],[0.09,0.85,0.09],logD));
+    o.push(obj("snFenceRail","Fence_Rail","box",[-1.4,0.895,3.4],[1.75,0.09,0.06],log));
+    return { name:"Snow Cabin", objects:o,
+      lights:[{type:"ambient",color:"#93a5bd",intensity:0.6},{type:"directional",color:"#e8eef7",intensity:0.9,position:[-4,7,3]}],
+      camera:{ position:[7.6,4.0,8.8], target:[0,1.3,0] } };
+  } }
+];
+function galleryByKey(key){
+  for (var i = 0; i < GALLERY.length; i++) if (GALLERY[i].key === key) return GALLERY[i];
+  return null;
+}
+function galShade(hex, f){
+  var c = hexRgb(hex);
+  function cl(v){ return Math.max(0, Math.min(255, Math.round(v * f))); }
+  return "rgb(" + cl(c[0]) + "," + cl(c[1]) + "," + cl(c[2]) + ")";
+}
+/* Deterministic isometric thumbnail of a scene's AABBs (no renderer state). */
+function galleryThumbSvg(ir){
+  var W = 132, H = 88, pad = 7;
+  var items = ir.objects.map(function(o){ var b = aabb(o); return { o:o, b:b, d:(b.min[0]+b.max[0]+b.min[2]+b.max[2]) / 2 }; });
+  items.sort(function(a, b){ return a.d - b.d; });
+  function P(x, y, z){ return [(x - z) * 0.866, (x + z) * 0.5 - y]; }
+  var mnx = 1e9, mny = 1e9, mxx = -1e9, mxy = -1e9;
+  items.forEach(function(it){ var b = it.b;
+    [[b.min[0],b.min[1],b.min[2]],[b.max[0],b.min[1],b.min[2]],[b.min[0],b.min[1],b.max[2]],[b.max[0],b.min[1],b.max[2]],
+     [b.min[0],b.max[1],b.min[2]],[b.max[0],b.max[1],b.min[2]],[b.min[0],b.max[1],b.max[2]],[b.max[0],b.max[1],b.max[2]]].forEach(function(cc){
+      var p = P(cc[0], cc[1], cc[2]);
+      mnx = Math.min(mnx, p[0]); mxx = Math.max(mxx, p[0]); mny = Math.min(mny, p[1]); mxy = Math.max(mxy, p[1]);
+    });
+  });
+  var sc = Math.min((W - 2*pad) / Math.max(mxx - mnx, 0.001), (H - 2*pad) / Math.max(mxy - mny, 0.001));
+  function S(p){ return [(p[0]-mnx)*sc + pad + (W - 2*pad - (mxx-mnx)*sc) / 2, (p[1]-mny)*sc + pad + (H - 2*pad - (mxy-mny)*sc) / 2]; }
+  function poly(pts, fill){
+    return "<polygon points='" + pts.map(function(cc){ var s = S(P(cc[0], cc[1], cc[2])); return (Math.round(s[0]*10)/10) + "," + (Math.round(s[1]*10)/10); }).join(" ") + "' fill='" + fill + "'/>";
+  }
+  var out = "";
+  items.forEach(function(it){ var b = it.b, o = it.o, col = (o.material && o.material.baseColor) || "#888888";
+    var x0 = b.min[0], x1 = b.max[0], y0 = b.min[1], y1 = b.max[1], z0 = b.min[2], z1 = b.max[2];
+    if (y1 - y0 > 0.001){
+      out += poly([[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]], galShade(col, 0.62));
+      out += poly([[x1,y0,z0],[x1,y0,z1],[x1,y1,z1],[x1,y1,z0]], galShade(col, 0.45));
+    }
+    out += poly([[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1]], galShade(col, 0.95));
+  });
+  return "<svg viewBox='0 0 " + W + " " + H + "' xmlns='http://www.w3.org/2000/svg' role='img' aria-hidden='true'>" + out + "</svg>";
+}
+function renderGallery(){
+  var host = $("galleryGrid"); if (!host) return;
+  host.innerHTML = GALLERY.map(function(g){
+    var ir = g.build();
+    return "<button class='galcard' data-gallery='" + g.key + "'" + (galleryOpenInfo && galleryOpenInfo.key === g.key ? " aria-current='true'" : "") + ">" +
+      "<span class='galthumb'>" + galleryThumbSvg(ir) + "</span>" +
+      "<span class='galname'>" + esc(L5(g)) + "</span>" +
+      "<span class='galmeta'>" + esc(T(g.genreJa, g.genreEn)) + " · " + ir.objects.length + T(" 点"," objects") + "</span></button>";
+  }).join("");
+  Array.prototype.forEach.call(host.querySelectorAll("[data-gallery]"), function(b){
+    b.addEventListener("click", function(){ openGalleryItem(b.getAttribute("data-gallery")); });
+  });
+  renderGalleryInfo();
+}
+function renderGalleryInfo(){
+  var host = $("galleryInfo"); if (!host) return;
+  if (galleryOpenInfo){
+    var g = galleryByKey(galleryOpenInfo.key);
+    var edited = !!(currentIR && galleryOpenHash && currentHash && currentHash !== galleryOpenHash);
+    host.innerHTML = "<p class='hint' style='margin-top:6px'>" + T("作例「","Example “") + esc(g ? L5(g) : galleryOpenInfo.key) + T("」を開いています","” is open") +
+      (edited ? T("（編集済み — いまの設計図はあなたのアレンジです）"," (edited — the blueprint is now your arrangement)") : "") +
+      T("。そのまま編集・自動修復・書き出しができます。"," — edit, auto-repair and export it as-is.") + "</p>";
+  } else {
+    host.innerHTML = "<p class='hint' style='margin-top:6px'>" + T("作例はまだ開いていません。カードを選ぶと、完成した設計図がプレビューに開きます。","No example is open yet. Pick a card to open a finished blueprint in the preview.") + "</p>";
+  }
+}
+/* Open a built-in example as a COPY through the normal project-load path,
+   so it is immediately editable / repairable / exportable (a remix). */
+function openGalleryItem(key){
+  var g = galleryByKey(key);
+  if (!g) return false;
+  var ir = g.build();
+  var errs = validateIRSchema(ir);
+  if (errs.length){
+    setStatus("err", T("作例を開けませんでした: ","Could not open the example: ") + errs[0]);
+    return false;
+  }
+  if (!applyProjectData({ ir: ir }, T("作例ギャラリー","example gallery"))) return false;
+  galleryOpenInfo = { key: g.key };
+  galleryOpenHash = currentHash;
+  lastPlanner = { engine: "gallery", detail: "built-in example: " + g.en, model: "" };
+  renderDisclosure();
+  renderGallery();
+  setStatus("ok", T("作例「","Opened the example “") + L5(g) + T("」を開きました。そのまま編集・自動修復・書き出しができます（開いたのは複製で、作例そのものは変わりません）。","”. Edit, auto-repair and export it as-is (you opened a copy — the example itself never changes)."));
+  var pv = $("previewBox"); if (pv && pv.scrollIntoView) pv.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  return true;
+}
+
 function init(){
   applyModeDom();
   setLang(lang); /* restore the saved UI language (localStorage) before first paint of the dynamic panels */
@@ -35093,6 +35598,7 @@ function init(){
   injectAuditTab();
   renderExportProfiles();
   renderPresets();
+  renderGallery();
   renderStages();
   initThree();
   var restoredProj = restoreProject();
@@ -35116,6 +35622,7 @@ function init(){
     if ($("engLLM").getAttribute("aria-pressed")==="true"){ planWithLLM(text); return; }
     var res = planFromPrompt(text);
     repairLog = [];
+    galleryOpenInfo = null; galleryOpenHash = "";
     currentIR = ensureGroups(res.ir);
     lastPlanner = { engine: "builtin", detail: res.via === "generic" ? "built-in planner (keyword plan)" : "built-in planner (template: " + res.via + ")", model: "" };
     stageIdx = 0; renderStages(); refreshAll();
@@ -35152,6 +35659,7 @@ function init(){
       });
       if (!Array.isArray(ir.lights)) ir.lights = [{type:"ambient",color:"#9099a5",intensity:0.75}];
       if (!ir.camera || !Array.isArray(ir.camera.position)) ir.camera = { position:[5,3.5,6], target:[0,0.9,0] };
+      galleryOpenInfo = null; galleryOpenHash = "";
       currentIR = ensureGroups(ir);
       lastPlanner = { engine: "manual-ir", detail: "Scene IR edited by hand and re-applied", model: "" };
       refreshAll();
@@ -35388,7 +35896,7 @@ function setLang(l){
   updateLangPicker();
   applyPlaceholders();
   applyStaticTexts();
-  renderPresets(); renderStages(); renderExportProfiles(); renderCollection(); updateShareUI(); renderDisclosure();
+  renderPresets(); renderGallery(); renderStages(); renderExportProfiles(); renderCollection(); updateShareUI(); renderDisclosure();
   if (currentIR){ lastValidation = validate(currentIR, budgetKey); renderValidation(); renderRepairLog(); renderCleanup(); refreshBadgeOnly(); if (auditSummaryText) runSelfAudit(); }
 }
 document.addEventListener("DOMContentLoaded", init);
