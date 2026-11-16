@@ -29505,6 +29505,7 @@ function renderRepairLog(){
    number so it can be measured and repaired against:
      E = 3*interpenetrationRate + 2*floatingRate + 2*groundingError
        + 2*relationViolationRate + 1*outOfBoundsRate
+       + 2*instabilityRate + 2*anatomyViolationRate
    Every component is a mechanical census over the IR with the
    VALIDATOR'S OWN thresholds — the same counting sceneHealthMetrics
    reports — so validation IS the measurement of E, auto-repair is a
@@ -29516,7 +29517,7 @@ function renderRepairLog(){
    the optional ir.relations array ({a, type, b} = "a is <type> of
    b"); the built-in planner emits them for the relations it resolves,
    and they are re-evaluated from coordinates here.               */
-var ENERGY_WEIGHTS = { interpenetration: 3, floating: 2, grounding: 2, relations: 2, bounds: 1, stability: 2 };
+var ENERGY_WEIGHTS = { interpenetration: 3, floating: 2, grounding: 2, relations: 2, bounds: 1, stability: 2, anatomy: 2 };
 var ENERGY_CONVERGED_E = 0.02;
 var REPAIR_MAX_STEPS = 80;
 var RELATION_TYPES = ["on", "under", "beside", "front", "behind"];
@@ -29697,13 +29698,16 @@ function sceneEnergy(ir){
   var boundsRate = c.bounds && c.boundsJudged > 0 ? energyRound(c.outList.length / c.boundsJudged) : null;
   var phys = physicsAudit(ir);
   var stabRate = phys.stability.unstableRate !== null ? energyRound(phys.stability.unstableRate) : null;
+  var ana = anatomyCensus(ir);
+  var anaRate = ana ? energyRound(ana.violated.length / ana.checked) : null;
   add("interpenetration", interRate); add("floating", floatRate); add("grounding", groundErr);
   add("relations", relRate); add("bounds", boundsRate); add("stability", stabRate);
+  add("anatomy", anaRate);
   return {
     E: energyRound(E),
-    weights: { interpenetration: W.interpenetration, floating: W.floating, grounding: W.grounding, relations: W.relations, bounds: W.bounds, stability: W.stability },
+    weights: { interpenetration: W.interpenetration, floating: W.floating, grounding: W.grounding, relations: W.relations, bounds: W.bounds, stability: W.stability, anatomy: W.anatomy },
     convergedAtOrBelow: ENERGY_CONVERGED_E,
-    definition: "E = 3*interpenetrationRate + 2*floatingRate + 2*groundingError + 2*relationViolationRate + 1*outOfBoundsRate + 2*instabilityRate. Each component is a mechanical census over the IR with the validator's own thresholds (defect interpenetration = intersection over 25% and under 92% of the smaller volume, containment and stacking contact excluded; support = AABB top-face contact or Architecture contact, judged at the animation's lowest point; grounding error = mean over judged objects of the unsupported gap in metres, capped at 1 per object; relations = the IR's declared relations re-evaluated from coordinates; bounds = the floor / stage / architecture footprint in XZ; instability = the static-physics audit's share of judged assemblies / stacks flagged at tip-over risk or severe overhang). A component with nothing to judge is n/a and its weight is excluded from E \u2014 never estimated.",
+    definition: "E = 3*interpenetrationRate + 2*floatingRate + 2*groundingError + 2*relationViolationRate + 1*outOfBoundsRate + 2*instabilityRate + 2*anatomyViolationRate. Each component is a mechanical census over the IR with the validator's own thresholds (defect interpenetration = intersection over 25% and under 92% of the smaller volume, containment and stacking contact excluded; support = AABB top-face contact or Architecture contact, judged at the animation's lowest point; grounding error = mean over judged objects of the unsupported gap in metres, capped at 1 per object; relations = the IR's declared relations re-evaluated from coordinates; bounds = the floor / stage / architecture footprint in XZ; instability = the static-physics audit's share of judged assemblies / stacks flagged at tip-over risk or severe overhang; anatomy = the share of mannequin segment-proportion checks outside the accept ranges of a loaded anatomy knowledge model, n/a when no model is loaded or no mannequin is present). A component with nothing to judge is n/a and its weight is excluded from E \u2014 never estimated.",
     components: {
       interpenetration: interRate !== null
         ? { rate: interRate, defectPairs: c.defectPairs.length,
@@ -29731,11 +29735,95 @@ function sceneEnergy(ir){
             tipRisks: phys.stability.tipRisks.slice(0, 8), interfaceRisks: phys.stability.interfaceRisks.slice(0, 8),
             overhangSevere: phys.stability.overhangSevere.slice(0, 8),
             method: "static physics audit (physicsAudit): COM projection vs support footprint, normalised margin < 0.25, or overhang ratio > 0.5" }
-        : "n/a \u2014 no supported assembly to judge (nothing is grounded and nothing rests on anything)"
+        : "n/a \u2014 no supported assembly to judge (nothing is grounded and nothing rests on anything)",
+      anatomy: anaRate !== null
+        ? { rate: anaRate, figures: ana.figures, checked: ana.checked, violated: ana.violated.length,
+            violations: ana.violated.slice(0, 8).map(function(v){ return v.figure + ": " + v.segment + " ratio " + v.ratio + " outside [" + v.accept[0] + ", " + v.accept[1] + "] (" + v.rule + ")"; }),
+            modelHash: ana.modelHash,
+            method: "mannequin segment ratios derived from MANNEQUIN_PARTS (joint-to-joint lengths over height), checked against the segmentRatio.* accept ranges of the loaded anatomy knowledge model (rules.json; see anatomy/ in this repository). The model's rules carry their statistical basis; nothing is judged without a model." }
+        : "n/a \u2014 no anatomy knowledge model loaded (embed rules.json as ir.anatomyRules or call setAnatomyRules), or no mannequin figure to judge"
     },
     supportCycle: c.graph.cycle,
     supportOrder: c.graph.order
   };
+}
+/* ---------------- Anatomy knowledge model (2026-11-16) ------------
+   The 7th energy component: do the human figures in the scene
+   conform to measured human anatomy?  The knowledge model is built
+   OUTSIDE the app by the learning pipeline in anatomy/ (stream
+   processing over images; only aggregate statistics survive — see
+   anatomy/README.md) and reaches this code as data, in one of two
+   ways: embedded in the IR as ir.anatomyRules (the parsed contents
+   of rules.json, so a work bundle can carry the exact rules it was
+   judged against), or loaded for the session via setAnatomyRules().
+   Rules carry their basis (statistic, percentile method, sample
+   count) and the model's content hash, so a violation can always be
+   explained.  With no model loaded — or no mannequin in the scene —
+   the component is n/a and its weight drops out of E: behaviour is
+   exactly what it was before this component existed.
+   Only segment proportions are judged here: the IR mannequin has no
+   pose representation, so the model's joint-angle rules have no
+   scene quantity to check against yet.                        */
+var ANATOMY_SCHEMA_VERSION = 1;
+var anatomyRulesStore = null;
+function setAnatomyRules(rules){
+  if (!rules || typeof rules !== "object" || Array.isArray(rules) ||
+      rules.schemaVersion !== ANATOMY_SCHEMA_VERSION || !Array.isArray(rules.rules)){
+    anatomyRulesStore = null;
+    return false;
+  }
+  anatomyRulesStore = rules;
+  return true;
+}
+function anatomyRulesFor(ir){
+  var embedded = ir && ir.anatomyRules;
+  if (embedded && typeof embedded === "object" && !Array.isArray(embedded) &&
+      embedded.schemaVersion === ANATOMY_SCHEMA_VERSION && Array.isArray(embedded.rules))
+    return embedded;
+  return anatomyRulesStore;
+}
+/* Segment ratios of one mannequin, derived from MANNEQUIN_PARTS
+   itself (never a second, diverging table): a segment's length is
+   its part's Y size; the torso is the joint-to-joint distance
+   between the shoulder line (top of the upper-arm parts) and the
+   hip line (top of the thigh parts).  Part sizes are fractions of
+   height, so the values ARE the ratios the learning pipeline
+   publishes (segment length / stature).                        */
+function mannequinSegmentRatios(o){
+  var by = {};
+  MANNEQUIN_PARTS.forEach(function(p){ by[p.suffix] = p; });
+  function len(s){ return by[s] ? energyRound(by[s].size[1]) : null; }
+  function jointY(s){ return by[s] ? by[s].off[1] + by[s].size[1] / 2 : null; }
+  var shoulderY = jointY("Arm_L_Upper"), hipY = jointY("Leg_L_Thigh");
+  return {
+    head: len("Head"), upperArm: len("Arm_L_Upper"), forearm: len("Arm_L_Fore"),
+    thigh: len("Leg_L_Thigh"), shin: len("Leg_L_Shin"),
+    torso: (shoulderY !== null && hipY !== null) ? energyRound(shoulderY - hipY) : null
+  };
+}
+function anatomyCensus(ir){
+  var rules = anatomyRulesFor(ir);
+  if (!rules) return null;
+  var figs = mannequins(ir);
+  if (!figs.length) return null;
+  var accept = {};
+  rules.rules.forEach(function(r){
+    if (r && typeof r.target === "string" && Array.isArray(r.accept) && r.accept.length === 2)
+      accept[r.target] = r;
+  });
+  var checked = 0, violated = [];
+  figs.forEach(function(o){
+    var ratios = mannequinSegmentRatios(o);
+    Object.keys(ratios).forEach(function(seg){
+      var rule = accept["segmentRatio." + seg];
+      if (!rule || ratios[seg] === null) return;
+      checked++;
+      if (ratios[seg] < rule.accept[0] || ratios[seg] > rule.accept[1])
+        violated.push({ figure: o.name, segment: seg, ratio: ratios[seg], accept: rule.accept, rule: rule.id || rule.target });
+    });
+  });
+  if (!checked) return null;
+  return { figures: figs.length, checked: checked, violated: violated, modelHash: rules.modelHash || null };
 }
 /* ---------------- Static physics audit (2026-11-13) ----------------
    NO dynamic simulation is run — this is the static, IR-computable
@@ -30855,13 +30943,14 @@ function certificateText(){
   if (c.sceneEnergy){
     var se = c.sceneEnergy, sc = se.components;
     function seVal(x){ return typeof x === "object" ? String(x.rate !== undefined ? x.rate : x.error) : x; }
-    L.push("Scene energy E = " + se.E + " (weights: interpenetration " + se.weights.interpenetration + " / floating " + se.weights.floating + " / grounding " + se.weights.grounding + " / relations " + se.weights.relations + " / bounds " + se.weights.bounds + " / stability " + se.weights.stability + "; converged at or below " + se.convergedAtOrBelow + "):");
+    L.push("Scene energy E = " + se.E + " (weights: interpenetration " + se.weights.interpenetration + " / floating " + se.weights.floating + " / grounding " + se.weights.grounding + " / relations " + se.weights.relations + " / bounds " + se.weights.bounds + " / stability " + se.weights.stability + " / anatomy " + se.weights.anatomy + "; converged at or below " + se.convergedAtOrBelow + "):");
     L.push("  Interpenetration rate: " + seVal(sc.interpenetration) + (typeof sc.interpenetration === "object" ? " (defect pairs " + sc.interpenetration.defectPairs + ", interpenetration volume " + sc.interpenetration.interpenetrationVolume + " of " + sc.interpenetration.totalVolume + " total)" : ""));
     L.push("  Floating rate: " + seVal(sc.floating) + (typeof sc.floating === "object" ? " (" + sc.floating.objects + " of " + sc.floating.judgedObjects + " judged objects)" : ""));
     L.push("  Grounding error: " + seVal(sc.grounding));
     L.push("  Relation violation rate: " + seVal(sc.relations) + (typeof sc.relations === "object" ? " (" + sc.relations.violated + " of " + sc.relations.declared + " declared relations violated" + (sc.relations.violatedList.length ? ": " + sc.relations.violatedList.join(", ") : "") + ")" : ""));
     L.push("  Out-of-bounds rate: " + seVal(sc.bounds) + (typeof sc.bounds === "object" ? " (" + sc.bounds.objects + " of " + sc.bounds.judgedObjects + " judged objects)" : ""));
     L.push("  Instability rate: " + seVal(sc.stability) + (typeof sc.stability === "object" ? " (" + sc.stability.unstableUnits + " of " + sc.stability.judgedUnits + " judged assemblies/stacks; tip risks: " + (sc.stability.tipRisks.join(", ") || "none") + "; severe overhang: " + (sc.stability.overhangSevere.join(", ") || "none") + ")" : ""));
+    L.push("  Anatomy violation rate: " + seVal(sc.anatomy) + (typeof sc.anatomy === "object" ? " (" + sc.anatomy.violated + " of " + sc.anatomy.checked + " segment-proportion checks violated across " + sc.anatomy.figures + " mannequin figure(s)" + (sc.anatomy.violations.length ? ": " + sc.anatomy.violations.join("; ") : "") + (sc.anatomy.modelHash ? "; knowledge model " + sc.anatomy.modelHash : "") + ")" : ""));
     L.push("  Support cycle: " + (se.supportCycle ? se.supportCycle.join(" -> ") + " \u2014 ERROR: dependency order does not exist" : "none"));
     L.push("");
   }
@@ -33868,6 +33957,72 @@ function runSelfAudit(){
         certP.physics.penetrationDepth.maxDepthM === physicsAudit(currentIR).penetrationDepth.maxDepthM);
     }
   } catch(e){ physCk("physics checks executed", false); }
+  /* --- anatomy knowledge model (2026-11-16): the 7th energy
+     component.  Fixture rules are SYNTHETIC (hand-set around the
+     part table, labelled as fixtures) — they test the consumer's
+     mechanics, not any learned statistic.  Real rules come from
+     the anatomy/ learning pipeline.  Global state is restored. */
+  var anaFails = [];
+  function anaCk(name, ok){ totalChecks++; if (ok) totalPass++; else { anaFails.push(name); failures.push("anatomy: " + name); } }
+  var prevAnaStore = anatomyRulesStore;
+  var prevAnaIR = currentIR, prevAnaHash = currentHash;
+  try {
+    function anaScene(){
+      return catIR([
+        catObj("ana_floor","Floor_Probe","box",[0,-0.06,0],[6,0.12,5], { group: "Architecture" }),
+        mannequinObj("ana_mq","Figure_Probe",0,0,1.75,"#c9a189",0) ]);
+    }
+    function anaRule(id, target, lo, hi){
+      return { id: id, target: target, accept: [lo, hi],
+               basis: { stat: "fixture", method: "hand-set around MANNEQUIN_PARTS", n: 0 }, severity: "warn" };
+    }
+    var anaPassRules = { schemaVersion: 1, modelHash: "sha256:fixture", rules: [
+      anaRule("proportion.head", "segmentRatio.head", 0.10, 0.22),
+      anaRule("proportion.upperArm", "segmentRatio.upperArm", 0.12, 0.24),
+      anaRule("proportion.forearm", "segmentRatio.forearm", 0.11, 0.23),
+      anaRule("proportion.thigh", "segmentRatio.thigh", 0.20, 0.34),
+      anaRule("proportion.shin", "segmentRatio.shin", 0.17, 0.30),
+      anaRule("proportion.torso", "segmentRatio.torso", 0.20, 0.34) ] };
+    var anaBadRules = JSON.parse(JSON.stringify(anaPassRules));
+    anaBadRules.rules.forEach(function(r){ if (r.target === "segmentRatio.upperArm") r.accept = [0.30, 0.40]; });
+
+    var anaRatios = mannequinSegmentRatios(mannequinObj("ana_r","Ratio_Probe",0,0,1.7,"#c9a189",0));
+    anaCk("anatomy: segment ratios are derived from MANNEQUIN_PARTS (head 0.16 / upperArm 0.18 / forearm 0.17 / thigh 0.28 / shin 0.235 / torso 0.275)",
+      anaRatios.head === 0.16 && anaRatios.upperArm === 0.18 && anaRatios.forearm === 0.17 &&
+      anaRatios.thigh === 0.28 && anaRatios.shin === 0.235 && anaRatios.torso === 0.275);
+    var eAnaNone = sceneEnergy(anaScene());
+    anaCk("anatomy n/a honesty: no knowledge model loaded -> the anatomy component is n/a (weight 2 stated, excluded from E), not zero-filled",
+      typeof eAnaNone.components.anatomy === "string" && eAnaNone.components.anatomy.indexOf("n/a") === 0 &&
+      eAnaNone.weights.anatomy === 2);
+    var irAnaPass = anaScene(); irAnaPass.anatomyRules = anaPassRules;
+    var eAnaPass = sceneEnergy(irAnaPass);
+    anaCk("anatomy: with passing fixture rules embedded in the IR, all 6 segment checks run and the violation rate is 0",
+      typeof eAnaPass.components.anatomy === "object" && eAnaPass.components.anatomy.checked === 6 &&
+      eAnaPass.components.anatomy.rate === 0 && eAnaPass.components.anatomy.violated === 0 &&
+      eAnaPass.components.anatomy.modelHash === "sha256:fixture");
+    var irAnaBad = anaScene(); irAnaBad.anatomyRules = anaBadRules;
+    var eAnaBad = sceneEnergy(irAnaBad);
+    anaCk("anatomy: one impossible accept range violates exactly that segment (rate 1/6) and E rises by 2 x 1/6",
+      typeof eAnaBad.components.anatomy === "object" && eAnaBad.components.anatomy.violated === 1 &&
+      eAnaBad.components.anatomy.violations[0].indexOf("upperArm") >= 0 &&
+      Math.abs((eAnaBad.E - eAnaPass.E) - 2 * (1 / 6)) < 0.001);
+    anaCk("anatomy determinism: two censuses of the same scene are identical",
+      JSON.stringify(anatomyCensus(irAnaBad)) === JSON.stringify(anatomyCensus(irAnaBad)));
+    anaCk("anatomy: setAnatomyRules rejects a foreign schema version and honours a valid model for scenes without embedded rules",
+      setAnatomyRules({ schemaVersion: 2, rules: [] }) === false &&
+      typeof sceneEnergy(anaScene()).components.anatomy === "string" &&
+      setAnatomyRules(anaPassRules) === true &&
+      typeof sceneEnergy(anaScene()).components.anatomy === "object");
+    setAnatomyRules(null);
+    currentIR = irAnaBad; currentHash = stableHash(canonicalStringify(irAnaBad));
+    var certAna = buildCertificate();
+    anaCk("certificate: the anatomy component travels into the QA certificate with its violations and model hash",
+      !!certAna.sceneEnergy && typeof certAna.sceneEnergy.components.anatomy === "object" &&
+      certAna.sceneEnergy.components.anatomy.violated === 1 &&
+      certAna.sceneEnergy.weights.anatomy === 2);
+    currentIR = prevAnaIR; currentHash = prevAnaHash;
+  } catch(e){ anaCk("anatomy checks executed", false); }
+  anatomyRulesStore = prevAnaStore;
   var html = "<div class='audsum'><span>CHECKS <b>" + totalPass + " / " + totalChecks + "</b></span><span>GUIDES <b>" + GUIDES.length + "</b></span>" +
     (reach ? "<span>" + T("かんたん到達性 ","SIMPLE PATH ") + "<b>" + reach.steps + T(" ステップ"," STEPS") + "</b> (<= 5)</span>" : "") + "<span>" +
     (failures.length ? T("失敗 ","Failures: ") + failures.length : T("全組み合わせ合格","All combinations pass")) + "</span><span>" +
@@ -33940,6 +34095,7 @@ function runSelfAudit(){
   if (!compFails.length) auditSummaryText += "\nCompetitor-scan improvements (2026-11-13) are included in the totals above: numeric scene-health metrics in the QA certificate (interpenetration pairs and share of all pairs, floating share, grounded/supported rate, naming compliance \u2014 all with the validator's thresholds; physics stability was then honestly n/a because no simulation is run — superseded by the static physics audit below), planner + asset-origin + licence disclosure recorded in the certificate, the work bundle and the share card, a pre-export outlook in the export panel (estimated file size under a stated model, VRChat triangle-rank outlook per platform, per-format retention/loss for the current scene), deterministic seeded blueprint variations (layout permutation / curated palette swap), and on-device reference-image palette extraction applied to IR material colours.";
   if (!mathFails.length) auditSummaryText += "\nMathematical frame (2026-11-13) is included in the totals above: scene quality is one number \u2014 the energy E = 3*interpenetrationRate + 2*floatingRate + 2*groundingError + 2*relationViolationRate + 1*outOfBoundsRate, every component a mechanical census with the validator's own thresholds (n/a, with its weight excluded, when nothing can be judged). Validation displays E and its breakdown; the QA certificate states the weights, the breakdown, and the repair descent's before/after E with its full trace. Auto-repair is a steepest descent on E (a move that does not strictly lower E is never taken; the step cap and E >= 0 guarantee termination; a fixed candidate order makes ties deterministic), verified on planted-defect fixtures for strict monotone decrease, convergence to E = 0, an identical IR + trace across two runs, stack grounding in dependency order (a grounded supporter carries what rests on it), and honest non-convergence: a declared support cycle (a on b, b on a) is a validation FAIL, its members are never moved, and the certificate records NOT converged with the residual relations instead of claiming a fix. Declared relations live in ir.relations (the built-in planner emits the on / beside / front / behind relations it resolves; the LLM prompt documents the same field) and are re-evaluated from coordinates. Planner size words are log-scale, verified through the real planner: large x1.5 and small x1/1.5 are exact reciprocals, an explicit 4x is honoured, and 10x clamps at the log-symmetric bound 2^2.";
   if (!physFails.length) auditSummaryText += "\nStatic physics audit (2026-11-13) is included in the totals above: from the IR alone (no dynamic simulation) the product now computes mass (volume x a stated density table — wood 600 / plastic 1200 / glass 2500 / marble 2700 / stone 2400 / metal 7800 kg/m3, inferred from name keywords, transparency or metallic, with a stated 800 kg/m3 product default counted wherever it is used), centre-of-mass projection vs support footprints for tip-over risk (assemblies joined by support interfaces judged by their combined COM; margin normalised by COM height, threshold 0.25), overhang ratios (warning over 0.5), penetration depth in metres for defect pairs, and cumulative loads over the support graph (a supporter thinner than 0.08 m carrying over 3x its own mass is flagged). The instability rate is the energy's 6th component (weight 2, weights stated in the certificate), the descent gains a stabilise move (centre an object over its supporter), and the certificate carries an independent physics section stating thresholds, the density table, per-object masses and the scope that is still NOT computed: dynamic behaviour, friction and material strength.";
+  if (!anaFails.length) auditSummaryText += "\nAnatomy knowledge model (2026-11-16) is included in the totals above: the scene energy gains a 7th component (anatomy violation rate, weight 2, stated in the certificate) judging mannequin segment proportions against an anatomy knowledge model learned from real images by the stream-processing pipeline in anatomy/ (images are measured in memory and discarded; only aggregate statistics and derived rules survive). Rules reach the energy embedded in the IR (ir.anatomyRules) or via setAnatomyRules(); every rule carries its statistical basis and the model's content hash travels into the certificate. With no model loaded, or no mannequin in the scene, the component is honestly n/a and its weight drops out of E — verified for backward compatibility, for exact violation counting against hand-set fixture rules (the fixtures test the mechanics, not a learned statistic), for determinism, and for schema rejection of a foreign rules version. Joint-angle rules are learned but not yet judged: the IR mannequin carries no pose, so there is no scene quantity to check them against.";
 }
 function injectAuditTab(){
   var tabs = document.querySelector(".outcard .tabs");
