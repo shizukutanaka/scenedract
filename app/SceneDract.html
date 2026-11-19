@@ -27730,6 +27730,19 @@ function currentProfile(){
   for (var i=0;i<EXPORT_PROFILES.length;i++) if (EXPORT_PROFILES[i].id===exportProfileId) return EXPORT_PROFILES[i];
   return EXPORT_PROFILES[0];
 }
+function exportFormatKey(p){ return p.format === "GLB" ? "GLB" : (p.format.indexOf("USD") === 0 ? "USD" : "FBX"); }
+function exportStateLine(p){
+  return "_SD_EXPORTED = {'format': '" + exportFormatKey(p) + "', 'file': '" + p.file + "', 'path': bpy.path.abspath('//" + p.file + "'), 'ok': False, 'error': None}";
+}
+/* What each profile's measured round-trip says comes back on re-import:
+   kept = same count as the source scene, present = at least one comes back
+   when the scene has any (importers split/merge Actions), dropped = none by
+   design, info = recorded without a verdict (importer options / not as an Action). */
+var EXPORT_RT_EXPECT = {
+  GLB: { meshes: "kept", cameras: "info", lights: "info", images: "kept", actions: "present" },
+  USD: { meshes: "kept", cameras: "kept", lights: "kept", images: "kept", actions: "info" },
+  FBX: { meshes: "kept", cameras: "dropped", lights: "dropped", images: "kept", actions: "present" }
+};
 function exportCallLines(p){
   var L = [];
   if (p.format === "GLB"){
@@ -27745,12 +27758,15 @@ function exportCallLines(p){
     L.push("# pack()ed ARE preserved in the GLB as textures (measured on");
     L.push("# 5.2.0: images/textures present in the GLB). Node procedurals");
     L.push("# would NOT be — which is why patterns are image textures here.");
+    L.push(exportStateLine(p));
     L.push("try:");
     L.push("    bpy.ops.export_scene.gltf(filepath=bpy.path.abspath('//" + p.file + "'),");
     L.push("                              export_format='GLB', use_active_scene=True,");
     L.push("                              export_animations=True)");
+    L.push("    _sd_export_done()");
     L.push("except Exception as e:");
     L.push("    print('GLB export skipped:', e)");
+    L.push("    _SD_EXPORTED['error'] = str(e)");
   } else if (p.format.indexOf("USD") === 0){
     L.push("# ---- export: USD (.usda) -> " + p.target + " (5.2 verified) -----");
     L.push("# Whole-scene handoff: export AND round-trip fully verified on");
@@ -27764,12 +27780,15 @@ function exportCallLines(p){
     L.push("# come back as a named Action on re-import (measured).");
     L.push("# The texture argument is export_textures_mode — measured fact:");
     L.push("# an 'export_textures' argument does NOT exist on this operator.");
+    L.push(exportStateLine(p));
     L.push("try:");
     L.push("    bpy.ops.wm.usd_export(filepath=bpy.path.abspath('//" + p.file + "'),");
     L.push("                              export_animation=True,");
     L.push("                              export_textures_mode='NEW')");
+    L.push("    _sd_export_done()");
     L.push("except Exception as e:");
     L.push("    print('USD export skipped:', e)");
+    L.push("    _SD_EXPORTED['error'] = str(e)");
   } else {
     L.push("# ---- export: FBX geometry-only -> " + p.target + " (5.2 verified) -");
     L.push("# MEASURED profile, round-trip clean on Blender 5.2.0.");
@@ -27785,6 +27804,7 @@ function exportCallLines(p){
     L.push("# are EMBEDDED (measured on Blender 5.2.0): path_mode='COPY'");
     L.push("# together with embed_textures=True is what carries them —");
     L.push("# a path-referencing FBX leaves the images behind.");
+    L.push(exportStateLine(p));
     L.push("try:");
     L.push("    bpy.ops.export_scene.fbx(filepath=bpy.path.abspath('//" + p.file + "'),");
     L.push("                             object_types={'MESH', 'EMPTY'},");
@@ -27793,8 +27813,10 @@ function exportCallLines(p){
     L.push("                             path_mode='COPY', embed_textures=True,");
     L.push("                             bake_anim=True,");
     L.push("                             use_selection=False)");
+    L.push("    _sd_export_done()");
     L.push("except Exception as e:");
     L.push("    print('FBX export skipped:', e)");
+    L.push("    _SD_EXPORTED['error'] = str(e)");
   }
   return L;
 }
@@ -27896,7 +27918,7 @@ function genBpy(ir){
   L.push("#           the QA certificate from prediction-only to measured.");
   L.push("# ================================================================");
   L.push("import bpy, bmesh, json, math");
-  L.push("import os, time");
+  L.push("import os, sys, time");
   L.push("from mathutils import Vector");
   L.push("");
   var prof = (typeof currentProfile === "function") ? currentProfile() : { target:"Unity", format:"GLB" };
@@ -27971,6 +27993,53 @@ function genBpy(ir){
   L.push("        _SD_CHECKPOINT.update({'saved': False, 'path': _dst, 'reason': 'checkpoint save failed: ' + str(_exc)})");
   L.push("        print('SCENEDRACT CHECKPOINT: FAILED (' + str(_exc) + ') — continuing WITHOUT a checkpoint; the current file is untouched')");
   L.push("_sd_save_checkpoint()");
+  L.push("");
+  L.push("SCENEDRACT_IR_HASH = " + JSON.stringify(irHashForReport));
+  L.push("def _sd_report_dir():");
+  L.push("    try:");
+  L.push("        _here = os.path.dirname(os.path.abspath(__file__))");
+  L.push("    except Exception:");
+  L.push("        _here = ''");
+  L.push("    if _here:");
+  L.push("        return _here");
+  L.push("    _fp = getattr(bpy.data, 'filepath', '') or ''");
+  L.push("    if _fp:");
+  L.push("        return os.path.dirname(os.path.abspath(_fp))");
+  L.push("    return os.getcwd()");
+  L.push("# ---- run guard ----------------------------------------------------");
+  L.push("# If a statement below raises, the rest of this script never runs —");
+  L.push("# report included. This hook still writes scenedract_report.json,");
+  L.push("# marked run.completed=False with the error and line, so a failed");
+  L.push("# run reaches SceneDract as evidence instead of silence. The hook");
+  L.push("# is removed again at the end of the script.");
+  L.push("_SD_T0 = time.time()");
+  L.push("_SD_RUN = {'completed': False, 'error': None, 'line': None}");
+  L.push("_SD_EXPORTED = {'format': None, 'ok': False, 'error': 'the script stopped before the export step'}");
+  L.push("_SD_PREV_HOOK = sys.excepthook");
+  L.push("def _sd_run_guard(_t, _v, _tb):");
+  L.push("    sys.excepthook = _SD_PREV_HOOK");
+  L.push("    try:");
+  L.push("        while _tb is not None and _tb.tb_next is not None:");
+  L.push("            _tb = _tb.tb_next");
+  L.push("        _SD_RUN.update({'error': _t.__name__ + ': ' + str(_v), 'line': _tb.tb_lineno if _tb is not None else None})");
+  L.push("        _p = os.path.join(_sd_report_dir(), 'scenedract_report.json')");
+  L.push("        with open(_p, 'w', encoding='utf-8') as _f:");
+  L.push("            json.dump({'format': 'scenedract/measured-report', 'version': 1, 'sceneIrHash': SCENEDRACT_IR_HASH,");
+  L.push("                       'blender': {'version': bpy.app.version_string}, 'ranAt': time.strftime('%Y-%m-%dT%H:%M:%S'),");
+  L.push("                       'profile': " + JSON.stringify({ target: prof.target, format: prof.format, file: prof.file || "" }) + ",");
+  L.push("                       'checkpoint': _SD_CHECKPOINT, 'run': _SD_RUN, 'export': _SD_EXPORTED,");
+  L.push("                       'counts': {}, 'objects': [], 'relations': []}, _f, ensure_ascii=False, indent=1)");
+  L.push("        print('SCENEDRACT RUN: FAILED at script line ' + str(_SD_RUN['line']) + ' — incomplete-run report written to ' + _p)");
+  L.push("    except Exception as _exc:");
+  L.push("        print('SCENEDRACT RUN: FAILED, and the incomplete-run report could not be written (' + str(_exc) + ')')");
+  L.push("    _SD_PREV_HOOK(_t, _v, _tb)");
+  L.push("sys.excepthook = _sd_run_guard");
+  L.push("");
+  L.push("def _sd_export_done():");
+  L.push("    _p = _SD_EXPORTED['path']");
+  L.push("    _SD_EXPORTED['ok'] = os.path.isfile(_p) and os.path.getmtime(_p) >= _SD_T0 - 2");
+  L.push("    if not _SD_EXPORTED['ok']:");
+  L.push("        _SD_EXPORTED['error'] = 'the export call returned but no fresh file exists at ' + _p");
   L.push("");
   L.push("# Export profile: " + prof.target + " / " + prof.format + " (selected in SceneDract;");
   L.push("# switch the profile there to regenerate with another destination)");
@@ -28131,7 +28200,7 @@ function genBpy(ir){
   L.push("        bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=16, radius=0.5)");
   L.push("        for v in bm.verts: v.co = (v.co.x*sx, v.co.y*sy, v.co.z*sz)");
   L.push("    elif kind == 'plane':");
-  L.push("        bmesh.ops.create_grid(bm, x_subdivisions=1, y_subdivisions=1, size=0.5)");
+  L.push("        bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=0.5)");
   L.push("        for v in bm.verts: v.co = (v.co.x*sx, v.co.y*sy, 0.0)");
   L.push("    else:");
   L.push("        bmesh.ops.create_cube(bm, size=1.0)");
@@ -28343,18 +28412,6 @@ function genBpy(ir){
   L.push("# SceneDract (Validation tab) and the QA certificate becomes");
   L.push("# prediction + measured. Report generation can never fail the");
   L.push("# build: any error is printed, the scene stays.");
-  L.push("SCENEDRACT_IR_HASH = " + JSON.stringify(irHashForReport));
-  L.push("def _sd_report_dir():");
-  L.push("    try:");
-  L.push("        _here = os.path.dirname(os.path.abspath(__file__))");
-  L.push("    except Exception:");
-  L.push("        _here = ''");
-  L.push("    if _here:");
-  L.push("        return _here");
-  L.push("    _fp = getattr(bpy.data, 'filepath', '') or ''");
-  L.push("    if _fp:");
-  L.push("        return os.path.dirname(os.path.abspath(_fp))");
-  L.push("    return os.getcwd()");
   L.push("def _sd_world_aabb(ob):");
   L.push("    try:");
   L.push("        _dg = bpy.context.evaluated_depsgraph_get()");
@@ -28475,14 +28532,70 @@ function genBpy(ir){
   L.push("        'relations': _rels,");
   L.push("        'notes': ['polygons/triangles: base mesh as built (Bevel / Subdivision stay LIVE and are not in these counts)', 'trianglesEvaluated: via the evaluated depsgraph, live modifiers included — the render-relevant count', 'aabb / dimensionsM: evaluated world bounds converted back to Scene IR axes (x, y-up, z-forward)', 'relations.satisfied: re-evaluated on measured bounds with the same thresholds as the in-app predictor; null = not measurable in this runtime'],");
   L.push("    }");
+  L.push("# ---- export round-trip (measured on THIS Blender) -------------------");
+  L.push("# The profile notes above were measured once, on Blender 5.2.0. This");
+  L.push("# re-imports the file just written into a throwaway scene, counts");
+  L.push("# what came back against the source scene and the profile's claim,");
+  L.push("# then deletes everything it imported — the built scene is untouched.");
+  L.push("_SD_RT_EXPECT = " + JSON.stringify(EXPORT_RT_EXPECT[exportFormatKey(prof)]).replace(/"/g, "'"));
+  L.push("_SD_RT_KINDS = ('objects', 'meshes', 'materials', 'images', 'actions', 'cameras', 'lights')");
+  L.push("def _sd_rt_census(objs, images, actions):");
+  L.push("    objs = list(objs)");
+  L.push("    return {'meshes': sum(1 for o in objs if o.type == 'MESH'), 'cameras': sum(1 for o in objs if o.type == 'CAMERA'),");
+  L.push("            'lights': sum(1 for o in objs if o.type == 'LIGHT'), 'images': images, 'actions': actions}");
+  L.push("def _sd_export_roundtrip():");
+  L.push("    _ex = dict(_SD_EXPORTED)");
+  L.push("    _rt = {'status': 'not-run', 'reason': None, 'blender': bpy.app.version_string, 'elements': [], 'differs': []}");
+  L.push("    _ex['roundTrip'] = _rt");
+  L.push("    if not _ex.get('ok'):");
+  L.push("        _rt['reason'] = 'no fresh export file: ' + str(_ex.get('error'))");
+  L.push("        return _ex");
+  L.push("    _ex['bytes'] = os.path.getsize(_ex['path'])");
+  L.push("    _mod, _op = {'GLB': ('import_scene', 'gltf'), 'USD': ('wm', 'usd_import'), 'FBX': ('import_scene', 'fbx')}[_ex['format']]");
+  L.push("    _fn = getattr(getattr(bpy.ops, _mod, None), _op, None)");
+  L.push("    if _fn is None:");
+  L.push("        _rt['reason'] = 'importer bpy.ops.' + _mod + '.' + _op + ' is not available'");
+  L.push("        return _ex");
+  L.push("    _src = _sd_rt_census(bpy.context.scene.objects, sum(1 for _i in bpy.data.images if _i.users and _i.type == 'IMAGE'), sum(1 for _a in bpy.data.actions if _a.users))");
+  L.push("    _before = {_k: set(getattr(bpy.data, _k)) for _k in _SD_RT_KINDS}");
+  L.push("    _tmp = bpy.data.scenes.new('SceneDract_RoundTrip')");
+  L.push("    try:");
+  L.push("        with bpy.context.temp_override(scene=_tmp, view_layer=_tmp.view_layers[0], collection=_tmp.collection):");
+  L.push("            _fn(filepath=_ex['path'])");
+  L.push("        _new = {_k: [_x for _x in getattr(bpy.data, _k) if _x not in _before[_k]] for _k in _SD_RT_KINDS}");
+  L.push("        _got = _sd_rt_census(_new['objects'], len(_new['images']), len(_new['actions']))");
+  L.push("        for _k, _want in _SD_RT_EXPECT.items():");
+  L.push("            _ok = None if _want == 'info' else (_got[_k] == _src[_k] if _want == 'kept' else ((_got[_k] > 0 or _src[_k] == 0) if _want == 'present' else _got[_k] == 0))");
+  L.push("            _rt['elements'].append({'element': _k, 'source': _src[_k], 'reimported': _got[_k], 'expected': _want, 'asExpected': _ok})");
+  L.push("            if _ok is False:");
+  L.push("                _rt['differs'].append(_k)");
+  L.push("        _rt['status'] = 'differs' if _rt['differs'] else 'clean'");
+  L.push("    except Exception as _exc:");
+  L.push("        _rt.update({'status': 'import-failed', 'reason': str(_exc)})");
+  L.push("    finally:");
+  L.push("        for _k in ('objects', 'meshes', 'materials', 'images', 'actions', 'cameras', 'lights'):");
+  L.push("            for _x in [_x for _x in getattr(bpy.data, _k) if _x not in _before[_k]]:");
+  L.push("                try:");
+  L.push("                    getattr(bpy.data, _k).remove(_x)");
+  L.push("                except Exception:");
+  L.push("                    pass");
+  L.push("        bpy.data.scenes.remove(_tmp)");
+  L.push("    return _ex");
   L.push("_SD_REPORT_PATH = None");
   L.push("try:");
+  L.push("    _SD_REPORT = _sd_measure()");
+  L.push("    _SD_RUN['completed'] = True");
+  L.push("    _SD_REPORT['run'] = _SD_RUN");
+  L.push("    _SD_REPORT['export'] = _sd_export_roundtrip()");
   L.push("    _SD_REPORT_PATH = os.path.join(_sd_report_dir(), 'scenedract_report.json')");
   L.push("    with open(_SD_REPORT_PATH, 'w', encoding='utf-8') as _f:");
-  L.push("        json.dump(_sd_measure(), _f, ensure_ascii=False, indent=1)");
+  L.push("        json.dump(_SD_REPORT, _f, ensure_ascii=False, indent=1)");
   L.push("    print('SCENEDRACT REPORT: measured run report written to ' + _SD_REPORT_PATH)");
+  L.push("    _rt = _SD_REPORT['export']['roundTrip']");
+  L.push("    print('SCENEDRACT ROUND-TRIP: ' + _rt['status'] + ('' if _rt['status'] == 'clean' else ' — ' + str(_rt['reason'] or ', '.join(_rt['differs']))))");
   L.push("except Exception as _exc:");
   L.push("    print('SCENEDRACT REPORT: FAILED (' + str(_exc) + ') — the scene itself was built; only the report is missing')");
+  L.push("sys.excepthook = _SD_PREV_HOOK");
   L.push("print(f\"Scene IR built: {len(IR['objects'])} objects\")");
   return L.join("\n");
 }
@@ -30742,6 +30855,8 @@ function buildCertificate(){
         reportFile: "scenedract_report.json",
         checkpoint: r.checkpoint || null,
         preflight: r.preflight || null,
+        run: r.run || null,
+        exportRoundTrip: (r.export && r.export.roundTrip) || null,
         counts: { irObjects: currentIR.objects.length,
                   ownedObjectsMeasured: r.counts ? r.counts.ownedObjects : null,
                   objectsFound: d.objectsFound, objectsMissing: d.objectsMissing,
@@ -31106,6 +31221,14 @@ function measuredDiff(ir, rep){
             trisMeasured: (rep.counts && typeof rep.counts.triangles === "number") ? rep.counts.triangles : null,
             trisEvaluated: (rep.counts && typeof rep.counts.trianglesEvaluated === "number") ? rep.counts.trianglesEvaluated : null,
             lines: [] };
+  if (rep.run && rep.run.completed === false){
+    d.runStopped = rep.run;
+    d.objectsMissing = ir.objects.map(function(o){ return o.name; });
+    d.lines.push("the run stopped before completion: " + (rep.run.error || "unknown error") +
+      (rep.run.line ? " (generated script line " + rep.run.line + ")" : "") +
+      " — nothing after that line ran, so the scene was not measured");
+    return d;
+  }
   var byName = {}, byIrId = {};
   (rep.objects || []).forEach(function(o){
     if (!o || !o.name) return;
@@ -31153,6 +31276,17 @@ function measuredDiff(ir, rep){
         d.trisEvaluated.toLocaleString() + " evaluated (live Bevel/Subdivision included)" +
         (d.trisMeasured !== null ? "; base mesh measured " + d.trisMeasured.toLocaleString() : ""));
   }
+  var rt = rep.export && rep.export.roundTrip;
+  d.roundTrip = rt ? rt.status : null;
+  if (rt && rt.status === "differs"){
+    (rt.elements || []).forEach(function(e){
+      if (e.asExpected === false)
+        d.lines.push("export round-trip differs from the profile's claim: " + e.element + " " + e.source + " in the scene -> " +
+          e.reimported + " re-imported (profile says " + e.expected + "; Blender " + (rt.blender || "?") + ")");
+    });
+  } else if (rt && rt.status !== "clean"){
+    d.lines.push("export round-trip not verified (" + rt.status + "): " + (rt.reason || "-"));
+  }
   return d;
 }
 function renderMeasured(){
@@ -31169,6 +31303,11 @@ function renderMeasured(){
       (rep.checkpoint && rep.checkpoint.saved ? esc(rep.checkpoint.path || "") : esc((rep.checkpoint && rep.checkpoint.reason) || "-")) + "</div>";
     html += "<div>" + esc(T("関係の再評価（実測）: ","Relations re-evaluated (measured): ")) + d.relationSatisfied + " / " + d.relationTotal +
       (d.relationUnknown ? " (" + d.relationUnknown + esc(T(" 件は実測不可"," not measurable")) + ")" : "") + "</div>";
+    var rt = rep.export && rep.export.roundTrip;
+    html += "<div>" + esc(T("書き出しの往復（再インポート実測）: ","Export round-trip (re-import measured): ")) +
+      (!rt ? esc(T("記録なし","not recorded")) :
+        esc(rt.status === "clean" ? T("プロファイルの主張どおり","as the profile claims") : rt.status) + " — " +
+        esc((rt.elements || []).map(function(e){ return e.element + " " + e.reimported + "/" + e.source; }).join(", ") || (rt.reason || ""))) + "</div>";
     if (d.lines.length){
       html += "<div>" + esc(T("予測との差異:","Differences from prediction:")) + "</div><ul>" +
         d.lines.map(function(s){ return "<li>" + esc(s) + "</li>"; }).join("") + "</ul>";
@@ -32380,6 +32519,15 @@ function bpyChecks(code, ir, profile){
      exec.indexOf("_SD_EXPORT_OPNAME = '" + (profile.format === "GLB" ? "gltf" : (profile.format.indexOf("USD") === 0 ? "usd_export" : "fbx")) + "'") >= 0);
   ck("run-evidence: the report re-evaluates the declared relations on measured bounds",
      exec.indexOf("_sd_measure") >= 0 && exec.indexOf("'satisfied'") >= 0 && exec.indexOf("_sd_to_ir_aabb") >= 0);
+  ck("run-evidence: create_grid uses the operator's real keywords (x_segments / y_segments — x_subdivisions is rejected)",
+     /create_grid\(bm, x_segments=1, y_segments=1/.test(exec) && !/x_subdivisions/.test(exec));
+  ck("run-evidence: a run that raises still writes an incomplete-run report (excepthook installed before the build, removed at the end)",
+     exec.indexOf("sys.excepthook = _sd_run_guard") >= 0 && exec.indexOf("sys.excepthook = _sd_run_guard") < exec.indexOf("IR = json.loads") &&
+     exec.lastIndexOf("sys.excepthook = _SD_PREV_HOOK") > exec.indexOf("_SD_REPORT_PATH = None"));
+  ck("run-evidence: the written export is re-imported into a throwaway scene and counted against THIS profile's claim",
+     exec.lastIndexOf("_sd_export_done()") > exec.indexOf(exportStateLine(profile)) && exec.indexOf(exportStateLine(profile)) >= 0 &&
+     exec.indexOf("_SD_RT_EXPECT = " + JSON.stringify(EXPORT_RT_EXPECT[exportFormatKey(profile)]).replace(/"/g, "'")) >= 0 &&
+     exec.indexOf("_SD_REPORT['export'] = _sd_export_roundtrip()") >= 0 && exec.indexOf("bpy.data.scenes.remove(_tmp)") >= 0);
   return c;
 }
 function unityChecks(code){
@@ -32559,7 +32707,7 @@ def _cone(bm, **k):
     bm.verts = [Vert(0, 0, 0), Vert(0.5, 0, 0), Vert(0, 0.5, 0)]
 def _uvsphere(bm, **k):
     bm.verts = [Vert(0.5, 0, 0), Vert(-0.5, 0, 0), Vert(0, 0.5, 0), Vert(0, 0, 0.5)]
-def _grid(bm, **k):
+def _grid(bm, x_segments=0, y_segments=0, size=0.0, matrix=None, calc_uvs=False):
     bm.verts = [Vert(-0.5, -0.5, 0), Vert(0.5, -0.5, 0), Vert(-0.5, 0.5, 0), Vert(0.5, 0.5, 0)]
 bmesh_mod = types.ModuleType("bmesh")
 bmesh_mod.new = lambda: BMesh()
